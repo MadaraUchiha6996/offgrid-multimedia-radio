@@ -52,6 +52,14 @@ This section details how to connect the external components to the ESP32-S3 boar
 
 ### Master Pin Interconnect Table
 
+## Master Hardware Wiring and Pin Mapping Guides
+
+The system uses a 3-Node Relay Architecture comprising two identical handheld terminals (Node A: Sender, Node B: Receiver) and a central routing hub (Node C: Home Base Server). 
+
+### Handheld Unit Configurations (Node A and Node B)
+
+All peripheral modules route directly into the custom PCB traces mapped to the ESP32-S3 pins as follows:
+
 | Module Peripheral | Module Pin Name | Target Pin (ESP32-S3) | Circuit Wire Function |
 | :--- | :--- | :--- | :--- |
 | **INMP441 Microphone** | VCC | 3.3V | Logic Power |
@@ -65,6 +73,15 @@ This section details how to connect the external components to the ESP32-S3 boar
 | | DIN | GPIO 21 | I2S Data Output Stream |
 | | LRC | GPIO 47 | I2S Word Selection Clock |
 | | BCLK | GPIO 48 | I2S Serial Bit Clock |
+| **Waveshare SX1262 LoRa**| VCC | 3.3V | Radio Logic Power |
+| | GND | GND | Common System Ground |
+| | MOSI | GPIO 11 | SPI Master Output Slave Input |
+| | MISO | GPIO 13 | SPI Master Input Slave Output |
+| | SCK | GPIO 12 | SPI Serial Clock Line |
+| | NSS / CS | GPIO 10 | SPI Chip Select |
+| | DIO1 | GPIO 5 | Digital Interrupt Output 1 |
+| | BUSY | GPIO 6 | Radio Busy Status Indicator |
+| | RST | GPIO 7 | Radio Hardware Reset Line |
 | **SSD1306 OLED Screen** | VCC | 3.3V | Logic Power |
 | | GND | GND | Common System Ground |
 | | SCL | GPIO 9 | I2C Hardware Clock Line |
@@ -72,14 +89,34 @@ This section details how to connect the external components to the ESP32-S3 boar
 | **Button 1 (Type/Send)** | Terminal 1 | GPIO 1 | Input Signal Line (With 10k Resistor pull-up to 3.3V) |
 | | Terminal 2 | GND | Short click: cycle letters / Long press: send message |
 | **Button 2 (Backspace)** | Terminal 1 | GPIO 2 | Input Signal Line (With 10k Resistor pull-up to 3.3V) |
-| | Terminal 2 | GND | Short click: delete last character |
+| | Terminal 2 | GND | Short click: delete last character / Cycle forward when draft empty |
 | **Button 3 (Exit)**      | Terminal 1 | GPIO 42 | Input Signal Line (With 10k Resistor pull-up to 3.3V) |
 | | Terminal 2 | GND | Short click: erase draft and exit menu |
 
-### Physical Speaker Hookup
-The raw connection leads extending from your 3W 4-Ohm 2-Inch Full Range Woofer screw directly into the positive (+) and negative (-) output block ports on the SmartElex MAX98357A module. Do not link these speaker wires directly into your breadboard holes.
+### Physical Handheld Speaker Hookup
+The raw connection leads extending from your 3W 4-Ohm 2-Inch Full Range Woofer screw directly into the positive (+) and negative (-) output block ports on the SmartElex MAX98357A module. Do not link these speaker wires directly into your PCB header pin holes or breadboard rails.
 
 ---
+
+### Home Base Station Configuration (Node C)
+
+The home relay server mounts the standard transceiver stack directly onto the main operating system host headers:
+
+| Module Peripheral | Module Pin Name | Target Pin (Raspberry Pi 4) | Circuit Wire Function |
+| :--- | :--- | :--- | :--- |
+| **Waveshare SX1262 HAT**| 5V | Physical Pin 2 / 4 | Main Hardware System Power |
+| | GND | Physical Pin 6 / 9 / 14 | Common System Ground |
+| | MOSI | Pin 19 / GPIO 10 | SPI0 Master Output Slave Input |
+| | MISO | Pin 21 / GPIO 9 | SPI0 Master Input Slave Output |
+| | SCLK | Pin 23 / GPIO 11 | SPI0 Serial Clock Line |
+| | CE0 | Pin 24 / GPIO 8 | SPI0 Chip Select Line |
+| | RST | Pin 22 / GPIO 25 | Radio Hardware Reset Line |
+| | BUSY | Pin 18 / GPIO 24 | Radio Busy Status Indicator |
+| | DIO1 | Pin 16 / GPIO 23 | Digital Interrupt Output 1 |
+
+### Home Base Station Power Hookup
+The Raspberry Pi 4 Base Hub remains continuously active as the central database relay and operates via its dedicated on-board USB-C power inlet driven by a standard multi-amperage mains power supply or dedicated high-capacity backup array.
+
 
 ## Custom 3-Button Typing Interface C++ Code
 
