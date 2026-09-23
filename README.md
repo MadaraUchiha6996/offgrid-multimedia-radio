@@ -20,29 +20,60 @@ The network consists of two completely duplicate, battery-powered stations (one 
 
 ---
 
-## Master Bill of Materials and Store Links
+## Bill of Materials (BOM)
 
-To construct both matching terminals, purchase these exact component choices from local Indian electronics distributors:
+This Bill of Materials details the components and tooling required to build one full operational pair (1 Sender Handset and 1 Base Receiver Station, totaling 2 physical nodes). 
 
-### Core Computers and Long-Range Radios (2 Pairs Needed)
-* 2x Raspberry Pi 4 Model B (4GB RAM): [Robocraze Raspberry Pi 4 (4GB)](https://robocraze.com) - Main system host and message database server.
-* 2x ESP32-S3 Development Board: [Robocraze ESP32-S3 Module](https://robocraze.com) - High-speed interface co-processor for audio and menus.
-* 2x Waveshare SX1262 LoRa HAT for Raspberry Pi: [Robu.in Waveshare SX1262 Radio HAT](https://robu.in) - Long-range radio link transceiver.
+### Core Computers & Radios
+* **1x Raspberry Pi 4 Model B (4GB RAM)** | Supplier: Robocraze | Price: ₹9,599 each
+* **1x SanDisk 64GB Micro SD-SDHC Memory Card** | Supplier: Robocraze | Price: ₹1,889
+* **1x HDMI to Micro HDMI Cable** | Supplier: Robocraze | Price: ₹165
+* **2x ESP32-S3 Development Board** | Supplier: Robocraze | Price: ₹1,798 (₹899 each)
+* **3x Waveshare SX1262 LoRa HAT for Raspberry Pi** | Supplier: Electro piiee | Price: ₹7,076 (₹1,999 each including shipping)
 
-### Audio Peripherals and Visual Displays (2 Pairs Needed)
-* 2x INMP441 MEMS Digital Microphone Module (I2S): [Robocraze INMP441 Microphone (I2S)](https://robocraze.com) - High-precision omnidirectional digital audio input.
-* 2x SmartElex I2S Audio Breakout - MAX98357A: [Techtonics MAX98357A Amplifier](https://techtonics.in) - Decodes digital frames directly for local audio output.
-* 2x 3W 4-Ohm 2-Inch Full Range Stereo Audio Speaker Woofer: [Robu.in Audio Component Catalog](https://robu.in) - Dynamic sound cone designed for voice clarity.
-* 2x 0.96-inch SSD1306 OLED Display Module (4-Pin I2C): [Robu.in 0.96-inch I2C OLED Panel](https://robu.in) - Screen interface used for menu systems and visual typing feedback.
+### Audio Peripherals & Visual Displays
+* **2x INMP441 MEMS Digital Microphone Module (I2S)** | Supplier: Robocraze | Price: ₹360 (₹180 each)
+* **2x SmartElex I2S Audio Breakout - MAX98357A** | Supplier: Techtonics | Price: ₹480 (₹240 each)
+* **2x 3W 4-Ohm 2-Inch Full Range Stereo Audio Speaker Woofer** | Supplier: Robu.in | Price: ₹240 (₹120 each)
+* **2x 0.96-inch SSD1306 OLED Display Module (4-Pin I2C)** | Supplier: Robu.in | Price: ₹440 (₹220 each)
 
-### Portable Power Banks and Interconnects
-* 2x Nextech 15W / 10000mAh CASE 3 Charging Power Bank: [Robocraze Power Supplies Search](https://robocraze.com) - Main portable power storage to run the nodes outside.
-* 2x 400-Point Solderless Prototyping Breadboard: [Robocraze 400-Points Breadboard](https://robocraze.com) - Base for prototyping the handset circuits without soldering.
-* 2x 12mm Momentary Tactile Push Buttons (5-Pack): [Robocraze Tactile Switches](https://robocraze.com) - Hardware keys for character entry, backspacing, and menu escaping.
-* 2x Male-to-Male (M-M) Jumper Wires Bundle: [Robocraze M-M Jumper Cable Wires](https://robocraze.com) - Connects modules within the breadboard grid columns.
-* 2x Female-to-Male (F-M) Jumper Wires Bundle: [Robocraze F-M Jumper Cable Wires](https://robocraze.com) - Connects the Raspberry Pi GPIO headers directly onto the breadboard rails.
-* 1x 10k Ohm Metal Film Resistors (Pack of 10): [Robocraze 10k Ohm Resistors](https://robocraze.com) - Pull-up references for stable button operations.
-* 2x Short USB-A to USB-C Data Cable: [Robocraze Type-C USB Interconnect Cable](https://robocraze.com) - Serial connection link between the Pi 4 and the ESP32.
+### Portable Power Banks & Interconnects
+* **2x Nextech 15W / 10000mAh CASE 3 Charging Power Bank** | Supplier: Robocraze | Price: ₹1,400 (₹700 each)
+* **2x 400-Point Solderless Prototyping Breadboard** | Supplier: Robocraze | Price: ₹150 (₹75 each)
+* **2x 12mm Momentary Tactile Push Buttons (5-Pack)** | Supplier: Robocraze | Price: ₹60 (₹20 each)
+* **2x Male-to-Male (M-M) Jumper Wires Bundle** | Supplier: Robocraze | Price: ₹150 (₹70 each)
+* **2x Female-to-Male (F-M) Jumper Wires Bundle** | Supplier: Robocraze | Price: ₹150 (₹70 each)
+* **1x 10k Ohm Metal Film Resistors (Pack of 10)** | Supplier: Robocraze | Price: ₹25
+* **2x Short USB-A to USB-C Data Cable** | Supplier: Robocraze | Price: ₹120 (₹60 each)
+
+### Fabrication Tools & Manufacturing Services
+* **1x Noel 25W Soldering Iron Tool** | Supplier: Robocraze | Price: ₹126
+* **1x High-Grade Solder Wire Spool (90g)** | Supplier: Robocraze | Price: ₹269
+* **1x Custom Printed Circuit Board Manufacturing Run** | Supplier: PCBWay | Price: ₹2,100 (Covers a custom batch run of 5-10 bare prototype boards)
+* **3x LoRa Antenna 868MHz 3.2dBi SMA Male** | Supplier: Local | Price: ₹300 (₹100 each)
+
+### Custom Protective Enclosures
+We migrated from baseline 3D plastic shells to a high-durability, multi-material modular structural layout (Rigid PETG Core + Shock-absorbing TPU bumpers/seals).
+
+#### 1. Sender Handset Enclosure
+* **Rigid PETG Core Frame, Rear Battery Clip & Buttons** (120g @ ₹6/g): ₹720
+* **Flexible TPU Shock Bumpers, Dust Plugs & Seals** (35g @ ₹8/g): ₹280
+* **Hardware Pack** (4x Brass Inserts, 4x M3 Thumbscrews, O-ring cord, Acrylic tape): ₹180
+* *Sender Case Subtotal:* ₹1,180 INR
+
+#### 2. Receiver Base Enclosure
+* **Rigid PETG Core Frame, Rear Battery Clip & Buttons** (120g @ ₹6/g): ₹720
+* **Flexible TPU Shock Bumpers, Dust Plugs & Seals** (35g @ ₹8/g): ₹280
+* **Hardware Pack** (4x Brass Inserts, 4x M3 Thumbscrews, O-ring cord, Acrylic tape): ₹180
+* *Receiver Case Subtotal:* ₹1,180 INR
+
+---
+
+### Project Financial Summary
+* **Estimated Project Grand Total:** **₹31,662 INR** (~$330.73 USD)
+
+> *Note on Sourcing:* Utilizing local Indian engineering distribution channels (Robocraze, Robu.in, Techtonics) helps minimize global logistics delays, keeps component pathways fully trackable, and completely bypasses high international clearing fees to expedite development milestones.
+
 
 ---
 
