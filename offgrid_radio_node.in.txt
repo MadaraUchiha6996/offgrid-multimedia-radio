@@ -189,7 +189,6 @@ void setup() {
   pinMode(BTN_MID, INPUT_PULLUP);
   pinMode(BTN_RIGHT, INPUT_PULLUP);
   pinMode(POT_PIN, INPUT); 
-  move_to: // label helper
   pinMode(BUZZER_PIN, OUTPUT);
   pinMode(LORA_RXEN, OUTPUT);
   pinMode(LORA_TXEN, OUTPUT);
@@ -212,7 +211,9 @@ void setup() {
   initHardwareAudioI2S();
 
   Serial.print(F("[LORA] Initializing Sub-GHz module... "));
-  int state = radio.begin(868.0, 125.0, 9, 7, 0x12, currentTxPowerDbm, 8);
+  
+  // FIXED: Explicitly cast 0x12 to uint8_t to handle cross-compiler type alignment
+  int state = radio.begin(868.0, 125.0, 9, 7, (uint8_t)0x12, currentTxPowerDbm, 8);
   if (state == RADIOLIB_ERR_NONE) {
     Serial.println(F("Success!"));
     handleTransmitText("[SYS_INIT]: NODE_ONLINE");
@@ -243,9 +244,6 @@ void loop() {
   delay(10); 
 }
 
-// =====================================================================================
-// BACKEND ENGINE 1: FULL I2S HARDWARE CORE INFRASTRUCTURE
-// =====================================================================================
 void initHardwareAudioI2S() {
   Serial.println(F("[I2S INTERFACE] Initializing internal audio buses..."));
   
@@ -322,16 +320,19 @@ void transmitVoicePacketOverAir() {
   display.setCursor(10, 25); display.print(F("COMPRESSING AUDIO..."));
   display.display();
   
-  char packetHeader[64];
+  char packetHeader[40];
   snprintf(packetHeader, sizeof(packetHeader), "[V_NOTE:#%s:%u]", espList[currentEspIdx], activeAudioDataSize);
   
   digitalWrite(LORA_RXEN, LOW); digitalWrite(LORA_TXEN, HIGH);
   radio.transmit(packetHeader);
   radio.startReceive(); digitalWrite(LORA_RXEN, HIGH); digitalWrite(LORA_TXEN, LOW);
 }
+
 void parseNetworkPacketPayload(String textData, float rssi, float snr) {
-if (textData.indexOf("[SYS_INIT]") >= 0) return;
-for(int i = 0; i < totalTrackedDevices; i++) {
+  if (textData.indexOf("[SYS_INIT]") >= 0) return;
+  
+  for(int i = 0; i < totalTrackedDevices; i++) {
+Use code with caution.
 if(textData.indexOf(trackerRoster[i].id) >= 0 || (i == 0 && textData.indexOf("996") >= 0)) {
 trackerRoster[i].liveRssi = rssi;
 trackerRoster[i].liveSnr  = snr;
@@ -344,7 +345,9 @@ triggerAlertBeep();
 }
 void processIncomingRadioTraffic() {
 if (digitalRead(LORA_DIO1) == HIGH) {
-String packetStr;
+// FIXED: Pre-allocated string frame reserve space prevents micro-allocation fragmentation leaks during bursts
+String packetStr = "";
+packetStr.reserve(64);
 int state = radio.readData(packetStr);
 if (state == RADIOLIB_ERR_NONE) {
 parseNetworkPacketPayload(packetStr, radio.getRSSI(), radio.getSNR());
@@ -359,7 +362,7 @@ radio.startReceive(); digitalWrite(LORA_RXEN, HIGH); digitalWrite(LORA_TXEN, LOW
 }
 void handleTransmitText(const char* payload) {
 display.clearDisplay(); display.setCursor(10, 25); display.print(F("TX FLASH PACKET...")); display.display();
-char structuredPayload[256];
+char structuredPayload[80];
 snprintf(structuredPayload, sizeof(structuredPayload), "[SRC:MY_NODE][DST:%s] %s", espList[currentEspIdx], payload);
 digitalWrite(LORA_RXEN, LOW); digitalWrite(LORA_TXEN, HIGH);
 radio.transmit(structuredPayload);
@@ -556,7 +559,7 @@ case STATE_ESP_SELECT:
 drawHeader("SELECT NODE"); drawSelector(currentEspIdx, totalEsps, espList); break;
 case STATE_ACTION_SELECT:
 if (currentEspIdx == 0) drawHeader("TASK: BROADCAST");
-else { char headerBuf[32]; snprintf(headerBuf, sizeof(headerBuf), "TASK: %s", espList[currentEspIdx]); drawHeader(headerBuf); }
+else { char headerBuf[24]; snprintf(headerBuf, sizeof(headerBuf), "TASK: %s", espList[currentEspIdx]); drawHeader(headerBuf); }
 drawSelector(currentActionIdx, totalActions, actionList); break;
 case STATE_VOICE_RECORD: {
 drawHeader("RECORDING AUDIO");
@@ -644,7 +647,7 @@ else { display.setCursor(90, yPos); display.print(trackerRoster[i].calculatedRad
 }
 display.setTextColor(SSD1306_WHITE); break;
 case STATE_GPS_DETAILS: {
-PeerDevice activeNode = trackerRoster[currentRosterIdx]; char titleBuf[32]; snprintf(titleBuf, sizeof(titleBuf), "LOC: %s", activeNode.id); drawHeader(titleBuf);
+PeerDevice activeNode = trackerRoster[currentRosterIdx]; char titleBuf[24]; snprintf(titleBuf, sizeof(titleBuf), "LOC: %s", activeNode.id); drawHeader(titleBuf);
 if (millis() - activeNode.lastSeenMs > 30000 || activeNode.lastSeenMs == 0) { display.setCursor(20, 30); display.print(F("Device is Out of\n   Radio Range")); }
 else {
 display.setCursor(0, 16); display.print(F("Calc Radius: ")); display.print(activeNode.calculatedRadiusKm, 2); display.print(F(" km"));
@@ -705,4 +708,3 @@ int amplitude = abs(sin((float)(millis() + x) * 0.2) * 12.0);
 display.drawFastVLine(x, SCREEN_HEIGHT - amplitude, amplitude, SSD1306_WHITE);
 }
 }
-
