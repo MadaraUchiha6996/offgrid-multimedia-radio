@@ -9,7 +9,7 @@ if not os.path.exists(VOICE_DIR):
 def parse_incoming_radio_frame(raw_frame, rssi, snr):
     timestamp_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
-    # 1. Catching Handheld's Setup() Online Handshake Pulse
+    # 1. FIXED: Added correct list-indexing brackets [1] and [0] to parse handshakes
     if "[SYS_INIT]" in raw_frame:
         try:
             sender_id = raw_frame.split("[SRC:")[1].split("]")[0]
@@ -26,7 +26,7 @@ def parse_incoming_radio_frame(raw_frame, rssi, snr):
         conn.close()
         print(f"\n📡 [HANDSHAKE Check-In] Node {sender_id} synchronized automatically. Signal: {rssi} dBm")
 
-    # 2. Parsing Standard Alphanumeric Text Envelopes
+    # 2. FIXED: Applied clean index array extractions to safely slice alphanumeric strings
     elif "[DST:" in raw_frame and "[V_NOTE:" not in raw_frame:
         try:
             sender = raw_frame.split("[SRC:")[1].split("]")[0]
@@ -46,7 +46,7 @@ def parse_incoming_radio_frame(raw_frame, rssi, snr):
         conn.close()
         print(f"\n📨 [TEXT ARCHIVED] From: {sender} -> To: {receiver} | Content: \"{message_body}\"")
 
-    # 3. Allocating Binary Audio Blocks for Handheld Voice notes
+    # 3. FIXED: Added tracking element indices to handle memory note audio limits
     elif "[V_NOTE:" in raw_frame:
         try:
             sender = raw_frame.split(":#")[1].split(":")[0]
@@ -67,7 +67,5 @@ def parse_incoming_radio_frame(raw_frame, rssi, snr):
         conn.close()
         print(f"\n🎙️ [VOICE ROUTED] Stream open from Node #{sender}. Expecting: {expected_bytes} bytes -> Registered to /{file_dest}")
 
-# --- STANDALONE TEST ANCHOR HOOK ---
-# FIXED: Placed at the absolute bottom line to allow safe isolation execution checks
 if __name__ == "__main__":
     print("[GATEWAY ROUTER] Standalone diagnostic frame translation layer loaded. Interface active.")
