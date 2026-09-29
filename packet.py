@@ -1,101 +1,78 @@
 import struct
-from typing import Optional
 
-class RadioPacket:
-    """
-    Handles serialization and deserialization of raw binary frames 
-    transmitted over the off-grid mesh network.
-    
-    Byte Layout (Fixed 10-byte header + Variable Payload up to 246 bytes):
-    -------------------------------------------------------------------------
+# --- AD-HOC PACKET TYPE IDENTIFIERS ---
+PACKET_TYPE_HANDSHAKE = 0x01  # Matches handheld's [SYS_INIT] boot check-in
+PACKET_TYPE_TEXT      = 0x02  # Standard text strings
+PACKET_TYPE_VOICE     = 0x03  # Handheld voice notes data chunk marker
 
-    | Offset | Type   | Name             | Description                      |
-    -------------------------------------------------------------------------
+class OffGridPacketEngine:
+    def __init__(self):
+        # Master header format signature matching standard microcontroller structures
+        # 1 Byte Source ID, 1 Byte Target ID, 1 Byte Type Flag, 1 Byte Data Length Code
+        self.header_format = ">BBBB" 
+        print("[PACKET ENGINE] Binary air serialization framework initialized.")
 
-    | 0      | uint8  | magic_byte       | Protocol verification (0xA5)     |
-    | 1      | uint8  | version          | Protocol version number          |
-    | 2      | uint8  | packet_type      | VOICE, GPS, TEXT, REQ_MSG, etc.  |
-    | 3      | uint8  | flags            | Bit 0: ACK Req, Bit 1: Encrypted |
-    | 4-5    | uint16 | source_node      | ID of origin node                |
-    | 6-7    | uint16 | dest_node        | ID of target node (0xFFFF = All) |
-    | 8      | uint8  | packet_id        | Sequence tracking ID             |
-    | 9      | uint8  | ttl              | Time To Live (Hop limit)         |
-    | 10+    | bytes  | payload          | Application specific data        |
-    -------------------------------------------------------------------------
-    """
-    MAGIC_BYTE = 0xA5
-    HEADER_FORMAT = "<BBBBHHBB"  # Explicit little-endian mapping
-    HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
-    MAX_FRAME_SIZE = 256
-
-    # Packet Type Enums
-    TYPE_TEXT    = 0x01
-    TYPE_GPS     = 0x02
-    TYPE_VOICE   = 0x03
-    TYPE_REQ_MSG = 0x04
-    TYPE_ACK     = 0x05
-
-    def __init__(self, 
-                 packet_type: int, 
-                 source_node: int, 
-                 dest_node: int, 
-                 packet_id: int, 
-                 ttl: int = 4, 
-                 flags: int = 0, 
-                 payload: bytes = b"",
-                 version: int = 1):
+    def serialize_text_packet(self, source_id, target_id, message_str):
+        """
+        Takes human-readable text inputs and bundles them into an efficient 
+        binary string sequence optimized for sub-GHz radio transmission lanes.
+        """
+        payload_bytes = message_str.encode('utf-8')
+        length = len(payload_bytes)
         
-        self.magic_byte: int = self.MAGIC_BYTE
-        self.version: int = version
-        self.packet_type: int = packet_type
-        self.flags: int = flags
-        self.source_node: int = source_node
-        self.dest_node: int = dest_node
-        self.packet_id: int = packet_id
-        self.ttl: int = ttl
-        self.payload: bytes = payload
+        # Enforce maximum physical radio buffer boundary constraint sizes (30 characters max)
+        if length > 30:
+            payload_bytes = payload_bytes[:30]
+            length = 30
+            
+        # Compile the 4-byte structural packet header array block
+        header = struct.pack(self.header_format, source_id, target_id, PACKET_TYPE_TEXT, length)
+        return header + payload_bytes
 
-    def serialize(self) -> bytes:
-        if len(self.payload) > (self.MAX_FRAME_SIZE - self.HEADER_SIZE):
-            raise ValueError(f"Payload size ({len(self.payload)}B) exceeds maximum limit.")
+    def deserialize_air_packet(self, raw_packet_bytes):
+        """
+        Intercepts incoming binary data arrays direct from the radio module 
+        and extracts the clear variables matching gateway metrics.
+        """
+        if len(raw_packet_bytes) < 4:
+            return None # Deformed fragment frame filter guard
+            
+        # Unpack the fixed header layout variables
+        header_size = struct.calcsize(self.header_format)
+        header_data = raw_packet_bytes[:header_size]
+        source_id, target_id, packet_type, length = struct.unpack(self.header_format, header_data)
+        
+        payload_data = raw_packet_bytes[header_size:header_size + length]
+        
+        # Translate the binary variables into standard application readable objects
+        if packet_type == PACKET_TYPE_TEXT:
+            parsed_text = payload_data.decode('utf-8', errors='ignore')
+            # Generate the string formatting frame template matching your gateway architecture hooks
+            reconstructed_frame = f"[SRC:{source_id}][DST:{target_id}] {parsed_text}"
+        elif packet_type == PACKET_TYPE_HANDSHAKE:
+            reconstructed_frame = f"[SRC:{source_id}][DST:{target_id}] [SYS_INIT]: NODE_ONLINE"
+        elif packet_type == PACKET_TYPE_VOICE:
+            reconstructed_frame = f"[V_NOTE:#{source_id}:{length}]"
+        else:
+            reconstructed_frame = f"[SRC:{source_id}][DST:{target_id}] [RAW_DATA_HEX]: {payload_data.hex()}"
+            
+        return {
+            "src": source_id,
+            "dst": target_id,
+            "type": packet_type,
+            "length": length,
+            "formatted_payload": reconstructed_frame
+        }
 
-        header_bytes = struct.pack(
-            self.HEADER_FORMAT,
-            self.magic_byte,
-            self.version,
-            self.packet_type,
-            self.flags,
-            self.source_node,
-            self.dest_node,
-            self.packet_id,
-            self.ttl
-        )
-        return header_bytes + self.payload
-
-    @classmethod
-    def deserialize(cls, raw_bytes: bytes) -> Optional['RadioPacket']:
-        if len(raw_bytes) < cls.HEADER_SIZE:
-            return None
-
-        header_bytes = raw_bytes[:cls.HEADER_SIZE]
-        payload_bytes = raw_bytes[cls.HEADER_SIZE:]
-
-        try:
-            unpacked = struct.unpack(cls.HEADER_FORMAT, header_bytes)
-            magic, version, pkt_type, flags, src, dest, pkt_id, ttl = unpacked
-
-            if magic != cls.MAGIC_BYTE:
-                return None
-
-            return cls(
-                packet_type=pkt_type,
-                source_node=src,
-                dest_node=dest,
-                packet_id=pkt_id,
-                ttl=ttl,
-                flags=flags,
-                payload=payload_bytes,
-                version=version
-            )
-        except struct.error:
-            return None
+if __name__ == "__main__":
+    # Local unit parsing verification runtime test loops block execution check
+    engine = OffGridPacketEngine()
+    
+    # Simulate serializing a standard message entry array sequence block
+    print("\n[PACKET TEST] Encoding text string: 'RESCUE ME' from Node 996 to Server Base (Node 0)")
+    binary_stream = engine.serialize_text_packet(16, 0, "RESCUE ME")
+    print(f" -> Output Binary Raw Stream Array Hex: {binary_stream.hex().upper()}")
+    
+    # Simulate reverse execution pipeline extraction tracking parameters
+    parsed_output = engine.deserialize_air_packet(binary_stream)
+    print(f" -> Decoded Gateway Application Format Target: '{parsed_output['formatted_payload']}'")
