@@ -56,3 +56,71 @@ Custom Device Enclosure Cost Breakdown
  Infrastructure Hardware Wiring Pinout Guides
 * **Server Unit (Raspberry Pi 4 to SX1262):** SPI bus connections, control signals (CS, Busy, Reset, DIO1), and power/ground rails.
 * **Handheld Unit (ESP32-S3 to Peripherals):** Dedicated GPIO mappings for the LoRa module, OLED display, navigation buttons, INMP441 microphone, and MAX98357A amplifier.
+# Off-Grid Multimedia Radio Network 📡
+
+An autonomous, decentralized, and highly tactical communication infrastructure system engineered to facilitate point-to-point and multi-node messaging over sub-GHz radio frequencies. Built to maintain communications completely independent of cellular networks, commercial Wi-Fi grids, or satellite reliance.
+
+##  System Architecture Overview
+
+The framework is divided into two distinct components that handshake automatically:
+1. **The Tactical Handheld Node (ESP32-S3):** Handles I2S digital audio recording, real-time OLED diagnostic telemetry screens, dynamic power scaling, and autonomous stealth standby intervals.
+2. **The Base Station Server Hub (Raspberry Pi 4):** Manages continuous 24/7 background radio queuing, handles double-ended emergency priority packet prioritization, and processes centralized logging into an SQLite database asset vault.
+
+---
+
+##  Repository File Directory Map
+
+*   `offgrid_radio_node.ino` — Master embedded C++ firmware for the ESP32-S3 terminal.
+*   `main_server.py` — The core 24/7 supervisor orchestration framework loop.
+*   `hardware_lora.py` — Native Python SPI register driver for the Waveshare SX1262 HAT.
+*   `gateway.py` — Asynchronous packet string extractor and token filter pipeline.
+*   `routing.py` — Double-ended priority queue mesh manager for emergency traffic.
+*   `database.py` — Structured schema engine managing the SQL text and voice vaults.
+*   `audio_codec.py` — Low-bandwidth compression layout matrix algorithms.
+
+---
+
+##  Core Operational Features
+
+*   **Priority Mail Alert Interceptor:** When an incoming transmission breaks radio silence, the handheld driver executes a priority break-loop. It snaps the hardware awake, fires a dual-tone buzzer warn signal, and flashes a custom geometric mail envelope overlay animation on the screen for exactly 4 seconds.
+*   **6-Minute Stealth Power-Save:** If no button interaction is recorded for 360,000ms, the ESP cuts power to the OLED pixel registry to completely freeze battery draw, keeping only the sub-GHz transceiver alive in deep low-noise monitoring states.
+*   **Zero-Satellite Proximity Tracking:** Option 3 parses live RSSI (Signal Strength) and SNR (Signal Quality) values into localized indoor/outdoor path loss logarithmic path-exponent equations, generating tracking radius spheres without requiring GPS.
+*   **On-the-Fly Power Tuning:** The backend samples a physical potentiometer voltage dial, mapping it instantly to change the module's broadcast footprint seamlessly between 2 dBm and 22 dBm on the fly.
+
+---
+
+##  Deployment Instructions
+
+### 1. Hardheld Node Flash (ESP32-S3)
+*   Ensure the following libraries are updated inside your Arduino IDE Library Manager:
+    *   `Adafruit SSD1306` & `Adafruit GFX`
+    *   `RadioLib` (by Jan Gromeš)
+*   Select the **ESP32S3 Dev Module** target profile configuration.
+*   Open `offgrid_radio_node.ino` and click **Upload**.
+
+### 2. Base Station Configuration (Raspberry Pi 4)
+Open the Linux terminal shell on your central Pi hub and run the following configuration sequence to install required hardware communication libraries:
+
+```bash
+# Enable the hardware SPI interface bus
+sudo raspi-config nonint do_spi 0
+
+# Install background kernel interface drivers
+pip install spidev RPi.GPIO
+
+# Launch the master server orchestration loop
+python3 main_server.py
+```
+
+---
+
+##  Network Communication Frame Spec
+
+All packets hitting the off-grid airspace utilize compact binary-wrapped link layer string structures to minimize air channel blockage:
+
+| Target Action | String Header Structure Template | Network Layer Response |
+| :--- | :--- | :--- |
+| **Boot Handshake** | `[SRC:NODE_ID][DST:SERVER] [SYS_INIT]: NODE_ONLINE` | Mapped as ONLINE in DB |
+| **Secure Text** | `[SRC:NODE_ID][DST:TARGET_ID] Message Content String` | Processed through Routing/Queues |
+| **Media Audio** | `[V_NOTE:#NODE_ID:EXPECTED_BYTES]` | Allocates raw binary file stream paths |
+
