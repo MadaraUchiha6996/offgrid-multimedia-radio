@@ -1,148 +1,58 @@
-\# Off-Grid Portable Multimedia Radio Network
-
-
-
-An autonomous, decentralized, and encrypted peer-to-peer ad-hoc communication network designed to provide mission-critical text telemetry, location mapping, and ultra-compressed digital voice messaging during catastrophic disaster events when standard cell towers, Wi-Fi infrastructure, and internet links fail completely.
-
-
-
-\##  System Architecture \& Directory Topology
-
-
-
-```text
-
-OffGridRadioServer/
-
-│
-
-├── packet.py             # Binary Protocol Layout (Header Structs)
-
-├── services.py           # Discovery Beacon \& GPS Compressed Encoders
-
-├── network\_env.py        # Asynchronous RF Air Interface Simulation
-
-├── routing.py            # Mesh Router, Deduplication \& TTL Manager
-
-├── audio\_codec.py        # Voice Note 10s Fragmentation/Assembly 
-
-├── database.py           # Context-Managed Power-Failure Protected SQL Store
-
-├── security.py           # Isolated Symmetric XOR Cipher (Dynamic Key Masking)
-
-├── gateway.py            # Automated Hybrid Internet WAN Routing Bridge
-
-├── satellite\_receiver.py # DVB-S Satellite Dish Downlink Demux Ingestion
-
-├── main\_server.py        # Master Coordinator Server Loop Daemon
-
-├── hardware\_lora.py      # Low-Level SPI/GPIO Waveshare Radio Interface Driver
-
-└── offgrid\_radio.service # Linux systemd Boot Automation Configuration
-
-```
-
-
-
-\##  Custom Binary Protocol Specification
-
-
-
-To maximize performance on constrained Sub-GHz LoRa channels, data frames utilize a strict, unpadded fixed 10-byte header layout packed in explicit little-endian format (`<`):
-
-
-
-| Offset (Bytes) | Field Name    | Data Type | Description                                   |
-
-|----------------|---------------|-----------|-----------------------------------------------|
-
-| 0              | magic\_byte    | uint8\_t   | Protocol verification sequence (`0xA5`)       |
-
-| 1              | version       | uint8\_t   | Framework iteration tracking indicator        |
-
-| 2              | packet\_type   | uint8\_t   | Type identifier (TEXT, GPS, VOICE, REQ\_MSG)   |
-
-| 3              | flags         | uint8\_t   | Bit 0: ACK Required \\| Bit 1: Encrypted Payload|
-
-| 4-5            | source\_node   | uint16\_t  | Origin transmitter address coordinate ID      |
-
-| 6-7            | dest\_node     | uint16\_t  | Destination target ID (`0xFFFF` = Broadcast)   |
-
-| 8              | packet\_id     | uint8\_t   | Deduplication sequencing tracking index       |
-
-| 9              | ttl           | uint8\_t   | Time To Live hop degradation boundary limit   |
-
-| 10+            | payload       | bytes     | Raw data bytes payload boundary (Max 246B)    |
-
-
-
-\##  Base Station Jumper Wire Pinout Mapping
-
-Connections from the Raspberry Pi 4 BCM GPIO interfaces to the Waveshare SX1262 LoRa HAT:
-
-
-
-\* \*\*MOSI\*\* -> GPIO 10 (Pin 19)
-
-\* \*\*MISO\*\* -> GPIO 9 (Pin 21)
-
-\* \*\*SCK\*\*  -> GPIO 11 (Pin 23)
-
-\* \*\*NSS / CS\*\* -> GPIO 8 (Pin 24)
-
-\* \*\*BUSY\*\* -> GPIO 24 (Pin 18)
-
-\* \*\*RST\*\*  -> GPIO 22 (Pin 15)
-
-\* \*\*DIO1\*\* -> GPIO 25 (Pin 22)
-
-
-
-\## Production Deployment Reference Manual
-
-
-
-\### 1. Verification
-
-Execute the local simulation validation script block to verify file paths and package bindings run cleanly without syntax faults:
-
-```bash
-
-python main\_server.py
-
-```
-
-
-
-\### 2. Auto-Boot System Daemon Configuration
-
-Configure the systemd service to automate script execution immediately upon hardware power attachment:
-
-```bash
-
-\# Copy system profile to daemon configuration paths
-
-sudo cp offgrid\_radio.service /etc/systemd/system/
-
-
-
-\# Reload structural index changes
-
-sudo systemctl daemon-reload
-
-
-
-\# Activate the initialization routine at boot sequence
-
-sudo systemctl enable offgrid\_radio.service
-
-
-
-\# Boot the active background daemon profile immediately
-
-sudo systemctl start offgrid\_radio.service
-
-```
-
-
-
+# Off-Grid Portable Multimedia Radio Network
+
+An autonomous, decentralized, and encrypted peer-to-peer ad-hoc communication network designed for emergency communication.
+
+## Project Description
+Provides a zero-infrastructure communication link for localized emergencies by deploying localized RF transceivers, dividing tasks between a stationary base station hub and ultra-portable handheld field units.
+
+## Core System Features
+* **Zero-Infrastructure Connectivity:** Operates independently of cellular carriers or Wi-Fi.
+* **Custom Binary Air Interface Protocol:** Utilizes an efficient header layout for Sub-GHz channels.
+* **Text & Voice Support:** Supports alphanumeric broadcasting and digital audio streams.
+* **Power-Failure Protected Storage:** Utilizes local database engines for asynchronous packet handling.
+
+## Technical Component Role Breakdown
+1. **Centralized Server Hub (Raspberry Pi 4 Model B):** Acts as primary coordinator, packet router, and database warehouse.
+2. **Handheld Field Transceiver (ESP32-S3 Development Board):** Low-latency node handling user input, displays, and audio/radio streaming.
+3. **Sub-GHz Radio Engine (Waveshare SX1262 LoRa HAT):** Handles physical layer RF modulation via SPI.
+
+## Master Bill of Materials (BOM)
+##Core Computers & Radios
+* **• Raspberry Pi 4 Model B (4GB RAM) | Robocraze | ₹9,599 each**
+* **• Raspberry Pi 4 Model B (4GB RAM) | Robocraze | ₹9,599 each**
+* **• SanDisk 64GB Micro SD-SDHC Memory Card | Robocraze | ₹1,889**
+* **• HDMI to Micro HDMI Cable | Robocraze | ₹165**
+* * **• Waveshare SX1262 LoRa HAT for Raspberry Pi | Electro piiee | ₹7,076 (3 units @ ₹1,999 each including shipping)**
+##Audio Peripherals & Visual Displays
+* **• INMP441 MEMS Digital Microphone Module (I2S) | Robocraze | ₹360 (2 units @ ₹180 each)**
+* **• SmartElex I2S Audio Breakout - MAX98357A | Techtonics | ₹480 (2 units @ ₹240 each)**
+* **• 3W 4-Ohm 2-Inch Full Range Stereo Audio Speaker Woofer | Robu.in | ₹240 (2 units @ ₹120 each)**
+* **• 0.96-inch SSD1306 OLED Display Module (4-Pin I2C) | Robu.in | ₹440 (2 units @ ₹220 each)**
+##Portable Power Banks & Interconnects
+* **• Nextech 15W / 10000mAh CASE 3 Charging Power Bank | Robocraze | ₹1,400 (2 units @ ₹700 each)**
+* **• 400-Point Solderless Prototyping Breadboard | Robocraze | ₹150 (2 units @ ₹75 each)**
+* **• 12mm Momentary Tactile Push Buttons (5-Pack) | Robocraze | ₹60 (2 packs @ ₹20 each)**
+* **• Male-to-Male (M-M) Jumper Wires Bundle | Robocraze | ₹150 (2 packs @ ₹70 each)**
+* **• Female-to-Male (F-M) Jumper Wires Bundle | Robocraze | ₹150 (2 packs @ ₹70 each)**
+* **• 10k Ohm Metal Film Resistors (Pack of 10) | Robocraze | ₹25**
+* **• Short USB-A to USB-C Data Cable | Robocraze | ₹120 (2 units @ ₹60 each)**
+* **• LoRa Antenna 868MHz 3.2dBi SMA Male | Local | ₹300 (3 units @ ₹100 each)**
+##Fabrication Tools & Manufacturing Services
+* **• Noel 25W Soldering Iron Tool | Robocraze | ₹126**
+* **• High-Grade Solder Wire Spool (90g) | Robocraze | ₹269**
+* **• PerfBoad | Robocraz | ₹100 (Batch of 5-10 boards)**
+##Custom Device Enclosure Cost Breakdown
+* **• Sender Station Case (Handheld Unit) | ₹1,180**
+* **• Rigid PETG Frame, Battery Clip, & Buttons (120g): ₹720**
+* **• Flexible TPU Shock Bumpers, Dust Plugs, & Seals (35g): ₹280**
+* **• Hardware Pack (Brass Inserts, M3 Thumbscrews, O-ring, Tape): ₹180**
+* **Receiver Station Case (Handheld Unit) | ₹1,180**
+* **• Rigid PETG Frame, Battery Clip, & Buttons (120g): ₹720**
+* **• Flexible TPU Shock Bumpers, Dust Plugs, & Seals (35g): ₹280**
+* **• Hardware Pack (Brass Inserts, M3 Thumbscrews, O-ring, Tape): ₹180**
+* **Grand Total Project Cost**
+* **₹31,662 INR (approx. $330.73 USD)**
+
+## Infrastructure Hardware Wiring Pinout Guides
+* **Server Unit (Raspberry Pi 4 to SX1262):** SPI bus connections, control signals (CS, Busy, Reset, DIO1), and power/ground rails.
+* **Handheld Unit (ESP32-S3 to Peripherals):** Dedicated GPIO mappings for the LoRa module, OLED display, navigation buttons, INMP441 microphone, and MAX98357A amplifier.
