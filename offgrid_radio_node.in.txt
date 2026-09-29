@@ -318,7 +318,7 @@ void transmitVoicePacketOverAir() {
   display.setCursor(10, 25); display.print(F("COMPRESSING AUDIO..."));
   display.display();
   
-  // FIXED: Allocated a robust 128-byte array to handle media frame headers
+  // FIXED: Converted to a proper 128-byte array container to clear compilation checks
   char packetHeader[128];
   snprintf(packetHeader, sizeof(packetHeader), "[V_NOTE:#%s:%u]", espList[currentEspIdx], activeAudioDataSize);
   
@@ -331,7 +331,6 @@ void parseNetworkPacketPayload(String textData, float rssi, float snr) {
   if (textData.indexOf("[SYS_INIT]") >= 0) return;
   
   for(int i = 0; i < totalTrackedDevices; i++) {
-Use code with caution.
 if(textData.indexOf(trackerRoster[i].id) >= 0 || (i == 0 && textData.indexOf("996") >= 0)) {
 trackerRoster[i].liveRssi = rssi;
 trackerRoster[i].liveSnr  = snr;
@@ -360,7 +359,7 @@ radio.startReceive(); digitalWrite(LORA_RXEN, HIGH); digitalWrite(LORA_TXEN, LOW
 }
 void handleTransmitText(const char* payload) {
 display.clearDisplay(); display.setCursor(10, 25); display.print(F("TX FLASH PACKET...")); display.display();
-// FIXED: Allocated a large 256-byte stack array to hold outgoing network string wrappers
+// FIXED: Converted to a proper 256-byte array stack string string to ensure data payload passes air lanes
 char structuredPayload[256];
 snprintf(structuredPayload, sizeof(structuredPayload), "[SRC:MY_NODE][DST:%s] %s", espList[currentEspIdx], payload);
 digitalWrite(LORA_RXEN, LOW); digitalWrite(LORA_TXEN, HIGH);
@@ -559,7 +558,7 @@ drawHeader("SELECT NODE"); drawSelector(currentEspIdx, totalEsps, espList); brea
 case STATE_ACTION_SELECT:
 if (currentEspIdx == 0) drawHeader("TASK: BROADCAST");
 else {
-// FIXED: Expanded array dimensions to comfortably store standard string formats
+// FIXED: Declared a secure 64-byte character array buffer layout
 char headerBuf[64];
 snprintf(headerBuf, sizeof(headerBuf), "TASK: %s", espList[currentEspIdx]);
 drawHeader(headerBuf);
@@ -652,7 +651,7 @@ else { display.setCursor(90, yPos); display.print(trackerRoster[i].calculatedRad
 display.setTextColor(SSD1306_WHITE); break;
 case STATE_GPS_DETAILS: {
 PeerDevice activeNode = trackerRoster[currentRosterIdx];
-// FIXED: Expanded array dimensions to comfortably store standard string formats
+// FIXED: Converted to a proper 64-byte character array configuration layout to lock compilation channels
 char titleBuf[64];
 snprintf(titleBuf, sizeof(titleBuf), "LOC: %s", activeNode.id);
 drawHeader(titleBuf);
@@ -716,3 +715,4 @@ int amplitude = abs(sin((float)(millis() + x) * 0.2) * 12.0);
 display.drawFastVLine(x, SCREEN_HEIGHT - amplitude, amplitude, SSD1306_WHITE);
 }
 }
+
