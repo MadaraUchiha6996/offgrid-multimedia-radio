@@ -51,7 +51,7 @@ Custom Device Enclosure Cost Breakdown
 * **• Flexible TPU Shock Bumpers, Dust Plugs, & Seals (35g): ₹280**
 * **• Hardware Pack (Brass Inserts, M3 Thumbscrews, O-ring, Tape): ₹180**
 * **Grand Total Project Cost**
-* **₹29,662 INR (approximately $309.81 USD)**
+* **₹29,662 INR (approximately $320.60 USD)**
 
  Infrastructure Hardware Wiring Pinout Guides
 * **Server Unit (Raspberry Pi 4 to SX1262):** SPI bus connections, control signals (CS, Busy, Reset, DIO1), and power/ground rails.
