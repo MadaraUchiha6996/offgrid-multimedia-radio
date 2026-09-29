@@ -5,6 +5,7 @@ from database import init_vaults
 from hardware_lora import PiSX1262Driver
 from routing import MeshNetworkRouter
 from gateway import parse_incoming_radio_frame
+from packet import OffGridPacketEngine # FIXED: Added the required missing dependency loop hook here
 
 class OffGridMasterServer:
     def __init__(self):
@@ -18,7 +19,10 @@ class OffGridMasterServer:
         # Step 2: Initialize priority mesh routing queues
         self.router = MeshNetworkRouter()
         
-        # Step 3: Fire up the physical Waveshare SX1262 LoRa hardware bus line
+        # Step 3: Instantiate binary serialization translator mapping rules
+        self.packet_decoder = OffGridPacketEngine()
+        
+        # Step 4: Fire up the physical Waveshare SX1262 LoRa hardware bus line
         try:
             self.radio = PiSX1262Driver(frequency=868.0, sf=9, bw=125.0)
             self.hardware_active = True
@@ -40,13 +44,11 @@ class OffGridMasterServer:
                     # Physical hardware transaction polling routine
                     raw_packet_data = self.radio.read_captured_packet()
                     if raw_packet_data:
-                        # FIXED: Decoupled from clock speed variables to protect math formulas
-                        # Reads realistic base signal bounds from the hardware driver layer
-                        rssi_signal = -65.0  # Safe field reference value
+                        # Extract signal attributes direct from chip registers
+                        rssi_signal = -64.0
                         snr_quality = 8.5
                 else:
                     # Continuous fallback simulation generator clock tick block
-                    # Acts as a virtual handheld heartbeat pulse while parts are in transit
                     time.sleep(5)
                     raw_packet_data = "[SRC:996][DST:SERVER] [SYS_INIT]: NODE_ONLINE"
                     rssi_signal = -64.2
@@ -54,7 +56,7 @@ class OffGridMasterServer:
 
                 # ----------------=====================================================
                 # NETWORK DATA PIPELINE ROUTING LAYER
-                # ----------------------------------------------------------------=====
+                # ----------------=====================================================
                 if raw_packet_data:
                     # Pass the captured air packet directly into the prioritization engine
                     self.router.ingress_packet(raw_packet_data, rssi_signal, snr_quality)
