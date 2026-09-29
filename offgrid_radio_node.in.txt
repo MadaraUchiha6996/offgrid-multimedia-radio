@@ -318,7 +318,7 @@ void transmitVoicePacketOverAir() {
   display.setCursor(10, 25); display.print(F("COMPRESSING AUDIO..."));
   display.display();
   
-  // FIXED: Converted to a proper 128-byte array container to clear compilation checks
+  // FIXED: Attached size bracket definition to compile smoothly
   char packetHeader[128];
   snprintf(packetHeader, sizeof(packetHeader), "[V_NOTE:#%s:%u]", espList[currentEspIdx], activeAudioDataSize);
   
@@ -359,7 +359,7 @@ radio.startReceive(); digitalWrite(LORA_RXEN, HIGH); digitalWrite(LORA_TXEN, LOW
 }
 void handleTransmitText(const char* payload) {
 display.clearDisplay(); display.setCursor(10, 25); display.print(F("TX FLASH PACKET...")); display.display();
-// FIXED: Converted to a proper 256-byte array stack string string to ensure data payload passes air lanes
+// FIXED: Attached array bracket to handle outgoing envelope payload arrays smoothly
 char structuredPayload[256];
 snprintf(structuredPayload, sizeof(structuredPayload), "[SRC:MY_NODE][DST:%s] %s", espList[currentEspIdx], payload);
 digitalWrite(LORA_RXEN, LOW); digitalWrite(LORA_TXEN, HIGH);
@@ -558,7 +558,7 @@ drawHeader("SELECT NODE"); drawSelector(currentEspIdx, totalEsps, espList); brea
 case STATE_ACTION_SELECT:
 if (currentEspIdx == 0) drawHeader("TASK: BROADCAST");
 else {
-// FIXED: Declared a secure 64-byte character array buffer layout
+// FIXED: Set array dimensions cleanly to pass compilation check windows
 char headerBuf[64];
 snprintf(headerBuf, sizeof(headerBuf), "TASK: %s", espList[currentEspIdx]);
 drawHeader(headerBuf);
@@ -651,7 +651,7 @@ else { display.setCursor(90, yPos); display.print(trackerRoster[i].calculatedRad
 display.setTextColor(SSD1306_WHITE); break;
 case STATE_GPS_DETAILS: {
 PeerDevice activeNode = trackerRoster[currentRosterIdx];
-// FIXED: Converted to a proper 64-byte character array configuration layout to lock compilation channels
+// FIXED: Attached size bounds bracket definition directly to clear character array allocations
 char titleBuf[64];
 snprintf(titleBuf, sizeof(titleBuf), "LOC: %s", activeNode.id);
 drawHeader(titleBuf);
