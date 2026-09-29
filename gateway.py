@@ -68,5 +68,6 @@ def parse_incoming_radio_frame(raw_frame, rssi, snr):
         print(f"\n🎙️ [VOICE ROUTED] Stream open from Node #{sender}. Expecting: {expected_bytes} bytes -> Registered to /{file_dest}")
 
 # --- STANDALONE TEST ANCHOR HOOK ---
+# FIXED: Placed at the absolute bottom line to allow safe isolation execution checks
 if __name__ == "__main__":
     print("[GATEWAY ROUTER] Standalone diagnostic frame translation layer loaded. Interface active.")
