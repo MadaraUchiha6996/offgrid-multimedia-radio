@@ -1,126 +1,65 @@
-# Off-Grid Portable Multimedia Radio Network
+# DIY Off-Grid Radio Network for emergencies 
 
-An autonomous, decentralized, and encrypted peer-to-peer ad-hoc communication network designed for emergency communication.
+So basically this project is an offline communication setup meant for disasters when standard internet and cell towers go completely dark. It uses a main home base station linked to small portable handheld walkie-talkie units. They talk over raw radio waves without needing any active sim cards, wifi, or external provider networks.
 
-## Project Description
-Provides a zero-infrastructure communication link for localized emergencies by deploying localized RF transceivers, dividing tasks between a stationary base station hub and ultra-portable handheld field units.
+### how the system layout works
 
-## Core System Features
-* **Zero-Infrastructure Connectivity:** Operates independently of cellular carriers or Wi-Fi.
-* **Custom Binary Air Interface Protocol:** Utilizes an efficient header layout for Sub-GHz channels.
-* **Text & Voice Support:** Supports alphanumeric broadcasting and digital audio streams.
-* **Power-Failure Protected Storage:** Utilizes local database engines for asynchronous packet handling.
-
-## Technical Component Role Breakdown
-1. **Centralized Server Hub (Raspberry Pi 4 Model B):** Acts as primary coordinator, packet router, and database warehouse.
-2. **Handheld Field Transceiver (ESP32-S3 Development Board):** Low-latency node handling user input, displays, and audio/radio streaming.
-3. **Sub-GHz Radio Engine (Waveshare SX1262 LoRa HAT):** Handles physical layer RF modulation via SPI.
-
-## Master Bill of Materials (BOM)
-Core Computers & Radios
-* **• Raspberry Pi 4 Model B (4GB RAM) | Robocraze | ₹9,599 each**
-* **• Raspberry Pi 4 Model B (4GB RAM) | Robocraze | ₹9,599 each**
-* **• SanDisk 64GB Micro SD-SDHC Memory Card | Robocraze | ₹1,889**
-* **• HDMI to Micro HDMI Cable | Robocraze | ₹165**
-* * **• Waveshare SX1262 LoRa HAT for Raspberry Pi | Electro piiee | ₹7,076 (3 units @ ₹1,999 each including shipping)**
-Audio Peripherals & Visual Displays
-* **• INMP441 MEMS Digital Microphone Module (I2S) | Robocraze | ₹360 (2 units @ ₹180 each)**
-* **• SmartElex I2S Audio Breakout - MAX98357A | Techtonics | ₹480 (2 units @ ₹240 each)**
-* **• 3W 4-Ohm 2-Inch Full Range Stereo Audio Speaker Woofer | Robu.in | ₹240 (2 units @ ₹120 each)**
-* **• 0.96-inch SSD1306 OLED Display Module (4-Pin I2C) | Robu.in | ₹440 (2 units @ ₹220 each)**
-Portable Power Banks & Interconnects
-* **• Nextech 15W / 10000mAh CASE 3 Charging Power Bank | Robocraze | ₹1,400 (2 units @ ₹700 each)**
-* **• 400-Point Solderless Prototyping Breadboard | Robocraze | ₹150 (2 units @ ₹75 each)**
-* **• 12mm Momentary Tactile Push Buttons (5-Pack) | Robocraze | ₹60 (2 packs @ ₹20 each)**
-* **• Male-to-Male (M-M) Jumper Wires Bundle | Robocraze | ₹150 (2 packs @ ₹70 each)**
-* **• Female-to-Male (F-M) Jumper Wires Bundle | Robocraze | ₹150 (2 packs @ ₹70 each)**
-* **• 10k Ohm Metal Film Resistors (Pack of 10) | Robocraze | ₹25**
-* **• Short USB-A to USB-C Data Cable | Robocraze | ₹120 (2 units @ ₹60 each)**
-* **• LoRa Antenna 868MHz 3.2dBi SMA Male | Local | ₹300 (3 units @ ₹100 each)**
-Fabrication Tools & Manufacturing Services
-* **• Noel 25W Soldering Iron Tool | Robocraze | ₹126**
-* **• High-Grade Solder Wire Spool (90g) | Robocraze | ₹269**
-* **• PerfBoad | Robocraz | ₹100 (Batch of 5-10 boards)**
-Custom Device Enclosure Cost Breakdown
-* **• Sender Station Case (Handheld Unit) | ₹1,180**
-* **• Rigid PETG Frame, Battery Clip, & Buttons (120g): ₹720**
-* **• Flexible TPU Shock Bumpers, Dust Plugs, & Seals (35g): ₹280**
-* **• Hardware Pack (Brass Inserts, M3 Thumbscrews, O-ring, Tape): ₹180**
-* **Receiver Station Case (Handheld Unit) | ₹1,180**
-* **• Rigid PETG Frame, Battery Clip, & Buttons (120g): ₹720**
-* **• Flexible TPU Shock Bumpers, Dust Plugs, & Seals (35g): ₹280**
-* **• Hardware Pack (Brass Inserts, M3 Thumbscrews, O-ring, Tape): ₹180**
-* **Grand Total Project Cost**
-* **₹29,662 INR (approximately $320.60 USD)**
-
- Infrastructure Hardware Wiring Pinout Guides
-* **Server Unit (Raspberry Pi 4 to SX1262):** SPI bus connections, control signals (CS, Busy, Reset, DIO1), and power/ground rails.
-* **Handheld Unit (ESP32-S3 to Peripherals):** Dedicated GPIO mappings for the LoRa module, OLED display, navigation buttons, INMP441 microphone, and MAX98357A amplifier.
-# Off-Grid Multimedia Radio Network 📡
-
-An autonomous, decentralized, and highly tactical communication infrastructure system engineered to facilitate point-to-point and multi-node messaging over sub-GHz radio frequencies. Built to maintain communications completely independent of cellular networks, commercial Wi-Fi grids, or satellite reliance.
-
-##  System Architecture Overview
-
-The framework is divided into two distinct components that handshake automatically:
-1. **The Tactical Handheld Node (ESP32-S3):** Handles I2S digital audio recording, real-time OLED diagnostic telemetry screens, dynamic power scaling, and autonomous stealth standby intervals.
-2. **The Base Station Server Hub (Raspberry Pi 4):** Manages continuous 24/7 background radio queuing, handles double-ended emergency priority packet prioritization, and processes centralized logging into an SQLite database asset vault.
+The whole thing splits into two main sections that connect automatically:
+1. **The Handheld Walkie-Talkie (ESP32-S3):** This takes your voice notes through an I2S mic, shows details on a small OLED display screen, and lets you type out messages using a simple button menu. 
+2. **The Central Home Server Hub (Raspberry Pi 4):** This stays running at home 24/7 to sort out incoming radio signals, handle emergency message priorities, and save everything into a local SQLite database storage vault.
 
 ---
 
-##  Repository File Directory Map
+## repository file guide
 
-*   `offgrid_radio_node.ino` — Master embedded C++ firmware for the ESP32-S3 terminal.
-*   `main_server.py` — The core 24/7 supervisor orchestration framework loop.
-*   `hardware_lora.py` — Native Python SPI register driver for the Waveshare SX1262 HAT.
-*   `gateway.py` — Asynchronous packet string extractor and token filter pipeline.
-*   `routing.py` — Double-ended priority queue mesh manager for emergency traffic.
-*   `database.py` — Structured schema engine managing the SQL text and voice vaults.
-*   `audio_codec.py` — Low-bandwidth compression layout matrix algorithms.
-
----
-
-##  Core Operational Features
-
-*   **Priority Mail Alert Interceptor:** When an incoming transmission breaks radio silence, the handheld driver executes a priority break-loop. It snaps the hardware awake, fires a dual-tone buzzer warn signal, and flashes a custom geometric mail envelope overlay animation on the screen for exactly 4 seconds.
-*   **6-Minute Stealth Power-Save:** If no button interaction is recorded for 360,000ms, the ESP cuts power to the OLED pixel registry to completely freeze battery draw, keeping only the sub-GHz transceiver alive in deep low-noise monitoring states.
-*   **Zero-Satellite Proximity Tracking:** Option 3 parses live RSSI (Signal Strength) and SNR (Signal Quality) values into localized indoor/outdoor path loss logarithmic path-exponent equations, generating tracking radius spheres without requiring GPS.
-*   **On-the-Fly Power Tuning:** The backend samples a physical potentiometer voltage dial, mapping it instantly to change the module's broadcast footprint seamlessly between 2 dBm and 22 dBm on the fly.
+*   `offgrid_radio_node.ino` — Master C++ code running on the portable ESP32-S3 handsets.
+*   `main_server.py` — The main supervisor loop running on the home base station.
+*   `hardware_lora.py` — Simple python driver to talk to the Waveshare LoRa radio module over SPI pins.
+*   `gateway.py` — Extracts packets from incoming strings and handles data filtering.
+*   `routing.py` — The code that sorts out message queues so emergency alerts go first.
+*   `database.py` — Simple SQL layout that holds text history and voice logs.
+*   `audio_codec.py` — Compresses voice recordings so they can fit through tiny radio bands.
 
 ---
 
-##  Deployment Instructions
+### main operational features
 
-### 1. Hardheld Node Flash (ESP32-S3)
-*   Ensure the following libraries are updated inside your Arduino IDE Library Manager:
-    *   `Adafruit SSD1306` & `Adafruit GFX`
-    *   `RadioLib` (by Jan Gromeš)
-*   Select the **ESP32S3 Dev Module** target profile configuration.
-*   Open `offgrid_radio_node.ino` and click **Upload**.
-
-### 2. Base Station Configuration (Raspberry Pi 4)
-Open the Linux terminal shell on your central Pi hub and run the following configuration sequence to install required hardware communication libraries:
-
-```bash
-# Enable the hardware SPI interface bus
-sudo raspi-config nonint do_spi 0
-
-# Install background kernel interface drivers
-pip install spidev RPi.GPIO
-
-# Launch the master server orchestration loop
-python3 main_server.py
-```
+*   **Priority message waking:** If a critical emergency broadcast comes in while the radio is quiet, the handset breaks its standby loop instantly. It turns on the hardware, plays a quick dual-tone buzzer alert tone, and flashes a small envelope graphic on the screen for 4 seconds.
+*   **6-minute power saver mode:** If you don't click any buttons for 6 minutes (360,000 milliseconds), the ESP32 automatically cuts off power to the OLED screen panel registry. This keeps it from killing your power bank battery, leaving only the LoRa chip listening quietly for incoming signals.
+*   **Rough range tracking without gps:** Option 3 on the menu checks raw signal quality stats (RSSI and SNR values) and calculates them through a basic logarithmic formula. This gives you a rough tracking distance radius in meters without needing a separate power-hungry GPS module.
+*   **Twisting a dial for range control:** The board code checks a real physical potentiometer dial. If your friend is nearby, you can twist it down to low power (like +2 dBm) to save battery. If they're far away, you crank it to full power (+22 dBm) to push the message through concrete walls.
 
 ---
 
-##  Network Communication Frame Spec
+## master bill of materials (BOM)
 
-All packets hitting the off-grid airspace utilize compact binary-wrapped link layer string structures to minimize air channel blockage:
+### core computers & radios
+*   Raspberry Pi 4 Model B (4GB RAM) | Robocraze | ₹9,599 each
+*   SanDisk 64GB Micro SD-SDHC Memory Card | Robocraze | ₹1,889
+*   HDMI to Micro HDMI Cable | Robocraze | ₹165
+*   Waveshare SX1262 LoRa HAT for Raspberry Pi | Electro piiee | ₹7,076 (3 units @ ₹1,999 each including shipping)
 
-| Target Action | String Header Structure Template | Network Layer Response |
-| :--- | :--- | :--- |
-| **Boot Handshake** | `[SRC:NODE_ID][DST:SERVER] [SYS_INIT]: NODE_ONLINE` | Mapped as ONLINE in DB |
-| **Secure Text** | `[SRC:NODE_ID][DST:TARGET_ID] Message Content String` | Processed through Routing/Queues |
-| **Media Audio** | `[V_NOTE:#NODE_ID:EXPECTED_BYTES]` | Allocates raw binary file stream paths |
+### audio peripherals & visual displays
+*   INMP441 MEMS Digital Microphone Module (I2S) | Robocraze | ₹360 (2 units @ ₹180 each)
+*   SmartElex I2S Audio Breakout - MAX98357A | Techtonics | ₹480 (2 units @ ₹240 each)
+*   3W 4-Ohm 2-Inch Full Range Stereo Audio Speaker Woofer | Robu.in | ₹240 (2 units @ ₹120 each)
+*   0.96-inch SSD1306 OLED Display Module (4-Pin I2C) | Robu.in | ₹440 (2 units @ ₹220 each)
 
+### portable power banks & hardware bits
+*   Nextech 15W / 10000mAh CASE 3 Charging Power Bank | Robocraze | ₹1,400 (2 units @ ₹700 each)
+*   400-Point Solderless Prototyping Breadboard | Robocraze | ₹150 (2 units @ ₹75 each)
+*   12mm Momentary Tactile Push Buttons (5-Pack) | Robocraze | ₹60 (2 packs @ ₹20 each)
+*   Male-to-Male (M-M) Jumper Wires Bundle | Robocraze | ₹150 (2 packs @ ₹70 each)
+*   Female-to-Male (F-M) Jumper Wires Bundle | Robocraze | ₹150 (2 packs @ ₹70 each)
+*   10k Ohm Metal Film Resistors (Pack of 10) | Robocraze | ₹25
+*   Short USB-A to USB-C Data Cable | Robocraze | ₹120 (2 units @ ₹60 each)
+*   LoRa Antenna 868MHz 3.2dBi SMA Male | Local | ₹300 (3 units @ ₹100 each)
+
+### fabrication tools & case build setup
+*   Noel 25W Soldering Iron Tool | Robocraze | ₹126
+*   High-Grade Solder Wire Spool (90g) | Robocraze | ₹269
+*   PerfBoad | Robocraz | ₹100 (Batch of 5-10 boards)
+*   Sender Station Handheld Unit Case Setup (PETG frame, TPU bumpers, brass inserts, screws): ₹1,180
+*   Receiver Station Handheld Unit Case Setup : ₹1,180
+
+** total project cost:** ₹29,662 INR (about \$320.60 USD)
