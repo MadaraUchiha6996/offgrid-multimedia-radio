@@ -1,50 +1,32 @@
-import collections
 import time
 
+
 class MeshNetworkRouter:
+
     def __init__(self):
-        self.high_priority_queue = collections.deque()
-        self.standard_queue = collections.deque()
+        self.hi, self.std = [], []  # Native lists eliminate deque overhead
 
-    def ingress_packet(self, raw_frame, rssi, snr):
-        packet_wrapper = {
-            "payload": raw_frame,
-            "rssi": rssi,
-            "snr": snr,
-            "arrival_time": time.time()
-        }
-
-        if any(alert in raw_frame for alert in ["I NEED HELP", "RESCUE ME"]):
-            self.high_priority_queue.append(packet_wrapper)
-        else:
-            self.standard_queue.append(packet_wrapper)
+    def ingress_packet(self, raw, rssi, snr):
+        pkt = {"payload": raw, "rssi": rssi, "snr": snr, "arrival_time": time.time()}
+        # Minimalist priority grouping
+        (self.hi if any(a in raw for a in ("I NEED HELP", "RESCUE ME")) else self.std).append(pkt)
 
     def process_next_packet(self):
-        if self.high_priority_queue:
-            return self.high_priority_queue.popleft()
-        
-        if self.standard_queue:
-            return self.standard_queue.popleft()
-            
-        return None
+        # Native array truthiness checks prioritize high-priority packets first
+        return self.hi.pop(0) if self.hi else (self.std.pop(0) if self.std else None)
 
     def calculate_mesh_health(self, tracked_nodes):
-        current_time = time.time()
-        network_health_matrix = {}
-
-        for node_id, data in tracked_nodes.items():
-            last_seen = data.get("last_seen_epoch", current_time)
-            if current_time - last_seen > 45:
-                status = "DEGRADED / STALLED"
-            else:
-                status = "STABLE"
-                
-            network_health_matrix[node_id] = {
-                "name": data.get("friendly_name", f"Node #{node_id}"),
-                "status": status,
-                "link_margin_rssi": data.get("last_rssi", -120.0)
+        t = time.time()
+        # Clean dictionary comprehension handles the loop natively
+        return {
+            n_id: {
+                "name": d.get("friendly_name", f"Node #{n_id}"),
+                "status": "STABLE" if t - d.get("last_seen_epoch", t) <= 45 else "DEGRADED / STALLED",
+                "link_margin_rssi": d.get("last_rssi", -120.0),
             }
-        return network_health_matrix
+            for n_id, d in tracked_nodes.items()
+        }
+
 
 if __name__ == "__main__":
     router = MeshNetworkRouter()
