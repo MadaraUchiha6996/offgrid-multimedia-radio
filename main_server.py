@@ -1,43 +1,442 @@
-import sys
-import time
-from database import init_vaults
-from gateway import parse_incoming_radio_frame
-from hardware_lora import PiSX1262Driver
-from routing import MeshNetworkRouter
+#include <Arduino.h>
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <RadioLib.h> 
+#include <driver/i2s.h> 
 
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-class OffGridMasterServer:
+// Hardware PIN mapping profiles
+const int PIN_BTN_L = 2;
+const int PIN_BTN_M = 3;
+const int PIN_BTN_R = 4;
+const int PIN_POT = 1;
+const int PIN_BUZZER = 9;
 
-    def __init__(self):
-        init_vaults()
-        self.router = MeshNetworkRouter()
-        try:
-            self.radio = PiSX1262Driver(frequency=868.0, sf=9, bw=125.0)
-        except Exception:
-            self.radio = None  # Replaces booleans with native object existence
+const int I2S_MIC_WS = 42;
+const int I2S_MIC_SD = 41;
+const int I2S_MIC_SCK = 40;
 
-    def start_server_loop(self):
-        while True:
-            # Inline conditional handles hardware vs simulated fallback data
-            if self.radio:
-                data = self.radio.read_captured_packet()
-                rssi, snr = -64.0, 8.5 if data else (-120.0, 0.0)
-            else:
-                time.sleep(5)
-                data, rssi, snr = "[SRC:996][DST:SERVER] [SYS_INIT]: NODE_ONLINE", -64.2, 9.0
+const int LORA_NSS = 7;
+const int LORA_RXEN = 13;
+const int LORA_TXEN = 14;
+const int LORA_DIO1 = 5;
+const int LORA_NRST = 8;
+const int LORA_BUSY = 6;
 
-            if data:
-                self.router.ingress_packet(data, rssi, snr)
-                job = self.router.process_next_packet()
-                if job:
-                    # Native unpacking mapping to function args
-                    parse_incoming_radio_frame(job["payload"], job["rssi"], job["snr"])
+SX1262 radio = new Module(LORA_NSS, LORA_DIO1, LORA_NRST, LORA_BUSY);
 
-            time.sleep(0.01)
+#define AUDIO_SAMPLE_RATE 8000 
+#define AUDIO_BUFFER_SIZE 80000 
+uint8_t* voiceStorageBuffer = NULL; 
+uint32_t activeAudioDataSize = 0;
 
+enum SystemState {
+  STATE_WELCOME, STATE_MAIN_HUB, STATE_SERVER_SELECT, STATE_ESP_SELECT, STATE_ACTION_SELECT,
+  STATE_VOICE_RECORD, STATE_TEXT_MENU, STATE_TEXT_CUSTOM, STATE_INBOX_MENU, STATE_INBOX_TEXT,
+  STATE_INBOX_VOICE, STATE_VOICE_REQUEST, STATE_GPS_ENV_PROMPT, STATE_GPS_MENU, STATE_GPS_ROSTER,
+  STATE_GPS_DETAILS, STATE_HW_CONFIG, STATE_MAIL_POPUP       
+};
+SystemState currentState = STATE_WELCOME;
+SystemState prePopupState = STATE_MAIN_HUB; 
 
-if __name__ == "__main__":
-    try:
-        OffGridMasterServer().start_server_loop()
-    except KeyboardInterrupt:
-        sys.exit(0)  # Handles process safety globally at the execution entry point
+const char* mainHubOptions[] = {"[ SEND MESSAGES ]", "[ OPEN INBOX ]", "[ RSSI RADIUS TRACK ]", "[ POWER & HW CONFIG ]"};
+const char* serverList[]     = {"Server ALPHA", "Server BRAVO", "Server OMEGA"};
+const char* espList[]        = {"[ BROADCAST ALL ]", "ESP32-S3 #996", "ESP32-S3 #126", "ESP32-S3 #441"};
+const char* actionList[]     = {"Send Voice Note", "Send Text Msg"};
+const char* textMenuList[]   = {"I NEED HELP", "I AM SAFE", "RESCUE ME", "[ TYPE CUSTOM MSG ]"};
+const char* inboxChoices[]   = {"View Text Messages", "View Voice Notes"};
+const char* storedTexts[]    = {"#996: Moving to ridge", "#126: Battery at 15%", "ALPHA: Stay put"};
+
+int currentHubIdx = 0, currentServerIdx = 0, currentEspIdx = 0, currentActionIdx = 0;
+int currentTextOptIdx = 0, currentInboxChoiceIdx = 0, currentTextMsgIdx = 0, totalStoredTexts = 3;
+
+bool localVoiceNoteExists = false;
+bool isPlayingVoiceNote = false;
+bool isIndoorEnvironment = false;
+bool trackingEngineActive = true;
+
+int currentTxPowerDbm = 10;
+float calculatedMaxRangeKm = 0.0;
+unsigned long lastActivityTime = 0;
+bool isDisplayPoweredOn = true;
+unsigned long popupStartTime = 0;
+
+struct PeerDevice {
+  const char* id;
+  float calculatedRadiusKm; 
+  float liveRssi;          
+  float liveSnr;              
+  int headingDegrees;   
+  const char* compass;  
+  unsigned long lastSeenMs;
+};
+
+PeerDevice trackerRoster[] = {
+  {"ESP32-S3 #996", 0.0, -120.0, 0.0, 45, "NE", 0},
+  {"ESP32-S3 #126", 0.0, -120.0, 0.0, 270, "W", 0},
+  {"ESP32-S3 #441", 0.0, -120.0, 0.0, 195, "SSW", 0}
+};
+
+String customMessage = "";
+const char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 <-";
+int currentLetterIdx = 0;
+unsigned long buttonPressStartTime = 0;
+int activePressedPin = -1;
+bool midBtnActive = false;
+unsigned long midBtnPressTime = 0;
+
+void handleWelcomeAnimation();
+void checkButtons();
+void updateUI();
+void drawHeader(const char* title);
+void drawSelector(int idx, int total, const char* items[]);
+void drawVoiceUI(unsigned long elapsed);
+void handleTransmitText(const char* payload);
+void processIncomingRadioTraffic();
+float calculateRadiusFromRssi(float rssi, bool indoor);
+void readHardwarePotentiometer();
+void wakeDisplay();
+void checkPowerTimeout();
+void triggerAlertBeep();
+void initHardwareAudioI2S();
+void recordVoiceNoteBuffer();
+void playActiveVoiceBuffer();
+void transmitVoicePacketOverAir();
+void parseNetworkPacketPayload(String textData, float rssi, float snr);
+
+void setup() {
+  Serial.begin(115200);
+  
+  pinMode(PIN_BTN_L, INPUT_PULLUP);
+  pinMode(PIN_BTN_M, INPUT_PULLUP);
+  pinMode(PIN_BTN_R, INPUT_PULLUP);
+  pinMode(PIN_POT, INPUT); 
+  pinMode(PIN_BUZZER, OUTPUT);
+  pinMode(LORA_RXEN, OUTPUT);
+  pinMode(LORA_TXEN, OUTPUT);
+
+  voiceStorageBuffer = (uint8_t*)malloc(AUDIO_BUFFER_SIZE);
+  if (voiceStorageBuffer == NULL) while(1);
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) while(1);
+  
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+  handleWelcomeAnimation();
+  initHardwareAudioI2S();
+
+  int state = radio->begin(868.0, 125.0, 9, 7, 0x12, currentTxPowerDbm, 8);
+  if (state == RADIOLIB_ERR_NONE) {
+    handleTransmitText("[SYS_INIT]: NODE_ONLINE");
+    radio->startReceive();
+    digitalWrite(LORA_RXEN, HIGH); 
+    digitalWrite(LORA_TXEN, LOW);
+  } else {
+    while(1);
+  }
+
+  lastActivityTime = millis(); 
+  currentState = STATE_MAIN_HUB;
+}
+
+void loop() {
+  checkButtons();
+  if (trackingEngineActive) processIncomingRadioTraffic(); 
+  readHardwarePotentiometer();
+  checkPowerTimeout(); 
+  updateUI();
+  delay(10); 
+}
+
+void initHardwareAudioI2S() {
+  i2s_config_t micConfig = {
+    mode: (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX), 
+    sample_rate: AUDIO_SAMPLE_RATE,
+    bits_per_sample: I2S_BITS_PER_SAMPLE_16BIT,
+    channel_format: I2S_CHANNEL_FMT_ONLY_LEFT,
+    communication_format: I2S_COMM_FORMAT_STAND_I2S,
+    intr_alloc_flags: ESP_INTR_FLAG_LEVEL1,
+    dma_buf_count: 4,
+    dma_buf_len: 512,
+    use_apll: false
+  };
+  i2s_pin_config_t micPins = {
+    bck_io_num: I2S_MIC_SCK,
+    ws_io_num: I2S_MIC_WS,
+    data_out_num: I2S_PIN_NO_CHANGE,
+    data_in_num: I2S_MIC_SD
+  };
+  i2s_driver_install(I2S_NUM_0, &micConfig, 0, NULL);
+  i2s_set_pin(I2S_NUM_0, &micPins);
+}
+
+void recordVoiceNoteBuffer() {
+  size_t bytesRead = 0;
+  unsigned long startT = millis();
+  activeAudioDataSize = 0;
+  
+  while (millis() - startT < 10000) {
+    i2s_read(I2S_NUM_0, (void*)(voiceStorageBuffer + activeAudioDataSize), 1024, &bytesRead, portMAX_DELAY);
+    activeAudioDataSize += bytesRead;
+    if (activeAudioDataSize >= AUDIO_BUFFER_SIZE - 1024) break;
+    drawVoiceUI(millis() - startT);
+    display.display();
+  }
+  localVoiceNoteExists = true;
+}
+
+void playActiveVoiceBuffer() {
+  if (!localVoiceNoteExists || activeAudioDataSize == 0) return;
+  size_t bytesWritten = 0;
+  uint32_t playPointer = 0;
+  i2s_zero_dma_buffer(I2S_NUM_0);
+  
+  while (playPointer < activeAudioDataSize && isPlayingVoiceNote) {
+    i2s_write(I2S_NUM_0, (void*)(voiceStorageBuffer + playPointer), 1024, &bytesWritten, portMAX_DELAY);
+    playPointer += bytesWritten;
+    
+    display.clearDisplay();
+    drawHeader("PLAYING VOICE NOTE");
+    display.setCursor(0, 20); display.print(F("Audio streaming..."));
+    display.display();
+    if (digitalRead(PIN_BTN_M) == LOW) { delay(200); break; }
+  }
+  isPlayingVoiceNote = false;
+  i2s_zero_dma_buffer(I2S_NUM_0);
+}
+
+void transmitVoicePacketOverAir() {
+  if (activeAudioDataSize == 0) return;
+  display.clearDisplay();
+  display.setCursor(10, 25); display.print(F("PACKING AUDIO..."));
+  display.display();
+  
+  char packetHeader[64]; 
+  snprintf(packetHeader, sizeof(packetHeader), "[V_NOTE:#%s:%u]", espList[currentEspIdx], activeAudioDataSize);
+  
+  digitalWrite(LORA_RXEN, LOW); digitalWrite(LORA_TXEN, HIGH);
+  radio->transmit(packetHeader);
+  radio->startReceive(); digitalWrite(LORA_RXEN, HIGH); digitalWrite(LORA_TXEN, LOW);
+}
+
+void parseNetworkPacketPayload(String textData, float rssi, float snr) {
+  if (textData.indexOf("[SYS_INIT]") >= 0) return;
+  
+  for (int i = 0; i < 3; i++) {
+    if (textData.indexOf(trackerRoster[i].id) >= 0 || (i == 0 && textData.indexOf("996") >= 0)) {
+      trackerRoster[i].liveRssi = rssi;
+      trackerRoster[i].liveSnr  = snr;
+      trackerRoster[i].lastSeenMs = millis();
+      trackerRoster[i].calculatedRadiusKm = calculateRadiusFromRssi(rssi, isIndoorEnvironment);
+      wakeDisplay();
+      triggerAlertBeep();
+    }
+  }
+}
+
+void processIncomingRadioTraffic() {
+  if (digitalRead(LORA_DIO1) == HIGH) {
+    String packetStr = "";
+    packetStr.reserve(64); 
+    int state = radio->readData(packetStr);
+    if (state == RADIOLIB_ERR_NONE) {
+      parseNetworkPacketPayload(packetStr, radio->getRSSI(), radio->getSNR());
+      if (currentState != STATE_MAIL_POPUP && packetStr.indexOf("[SYS_INIT]") < 0) {
+        currentState = STATE_MAIL_POPUP;
+        popupStartTime = millis();
+      }
+    }
+    radio->startReceive(); digitalWrite(LORA_RXEN, HIGH); digitalWrite(LORA_TXEN, LOW);
+  }
+}
+
+void handleTransmitText(const char* payload) {
+  display.clearDisplay(); display.setCursor(10, 25); display.print(F("TX PACKET...")); display.display();
+  char structuredPayload[256]; 
+  snprintf(structuredPayload, sizeof(structuredPayload), "[SRC:MY_NODE][DST:%s] %s", espList[currentEspIdx], payload);
+  digitalWrite(LORA_RXEN, LOW); digitalWrite(LORA_TXEN, HIGH);
+  radio->transmit(structuredPayload);
+  radio->startReceive(); digitalWrite(LORA_RXEN, HIGH); digitalWrite(LORA_TXEN, LOW);
+  lastActivityTime = millis();
+  delay(500);
+}
+
+void wakeDisplay() {
+  if (!isDisplayPoweredOn) { display.ssd1306_command(SSD1306_DISPLAYON); isDisplayPoweredOn = true; }
+  lastActivityTime = millis();
+}
+
+void checkPowerTimeout() {
+  if (currentState != STATE_MAIL_POPUP && currentState != STATE_WELCOME && isDisplayPoweredOn) {
+    if (millis() - lastActivityTime >= 360000) {
+      display.ssd1306_command(SSD1306_DISPLAYOFF); isDisplayPoweredOn = false;
+    }
+  }
+}
+
+void triggerAlertBeep() {
+  for (int i = 0; i < 2; i++) {
+    digitalWrite(PIN_BUZZER, HIGH); delay(150); digitalWrite(PIN_BUZZER, LOW); delay(100);
+  }
+}
+
+void readHardwarePotentiometer() {
+  int rawAdc = analogRead(PIN_POT);
+  int targetPower = map(rawAdc, 0, 4095, 2, 22);
+  if (targetPower != currentTxPowerDbm) {
+    currentTxPowerDbm = targetPower;
+    radio->setOutputPower(currentTxPowerDbm);
+    calculatedMaxRangeKm = map(currentTxPowerDbm, 2, 22, isIndoorEnvironment ? 1 : 5, isIndoorEnvironment ? 5 : 60) / 10.0;
+    if (!isDisplayPoweredOn) wakeDisplay();
+    else lastActivityTime = millis();
+  }
+}
+
+float calculateRadiusFromRssi(float rssi, bool indoor) {
+  if (rssi >= 0) return 0.0;
+return pow(10.0, (-42.0 - rssi) / (10.0 * (indoor ? 4.2 : 2.5))) / 1000.0;
+}
+void handleWelcomeAnimation() {
+for (int y = SCREEN_HEIGHT; y >= 28; y -= 2) {
+display.clearDisplay(); display.setTextSize(2); display.setCursor(24, y); display.print(F("WELCOME")); display.display();
+delay(15);
+}
+delay(1500);
+}
+void checkButtons() {
+bool leftPressed  = (digitalRead(PIN_BTN_L) == LOW);
+bool midPressed   = (digitalRead(PIN_BTN_M) == LOW);
+bool rightPressed = (digitalRead(PIN_BTN_R) == LOW);
+if (!isDisplayPoweredOn && (leftPressed || midPressed || rightPressed)) { wakeDisplay(); delay(300); return; }
+if (leftPressed || midPressed || rightPressed) lastActivityTime = millis();
+if (currentState == STATE_MAIL_POPUP) return;
+if (currentState == STATE_INBOX_TEXT || currentState == STATE_INBOX_VOICE) {
+int currentPressedPin = leftPressed ? PIN_BTN_L : (midPressed ? PIN_BTN_M : (rightPressed ? PIN_BTN_R : -1));
+if (currentPressedPin != -1) {
+if (activePressedPin == -1) { activePressedPin = currentPressedPin; buttonPressStartTime = millis(); }
+else if (millis() - buttonPressStartTime >= 2000) {
+if (currentState == STATE_INBOX_TEXT && totalStoredTexts > 0) { totalStoredTexts--; }
+else if (currentState == STATE_INBOX_VOICE && localVoiceNoteExists) { localVoiceNoteExists = false; isPlayingVoiceNote = false; activeAudioDataSize = 0; }
+activePressedPin = -1; delay(400); return;
+}
+} else {
+if (activePressedPin != -1 && (millis() - buttonPressStartTime < 2000)) {
+if (activePressedPin == PIN_BTN_L) {
+if (currentState == STATE_INBOX_TEXT) currentTextMsgIdx = (currentTextMsgIdx + 1) % totalStoredTexts;
+} else if (activePressedPin == PIN_BTN_M) {
+if (currentState == STATE_INBOX_VOICE && localVoiceNoteExists) {
+isPlayingVoiceNote = !isPlayingVoiceNote;
+if (isPlayingVoiceNote) playActiveVoiceBuffer();
+}
+} else if (activePressedPin == PIN_BTN_R) { currentState = STATE_INBOX_MENU; isPlayingVoiceNote = false; }
+activePressedPin = -1; delay(200);
+}
+}
+return;
+}
+static bool lastRightState = false;
+if (rightPressed && !lastRightState) {
+lastRightState = true;
+if (currentState == STATE_SERVER_SELECT) currentState = STATE_MAIN_HUB;
+else if (currentState == STATE_ESP_SELECT) currentState = STATE_SERVER_SELECT;
+else if (currentState == STATE_ACTION_SELECT) currentState = STATE_ESP_SELECT;
+else if (currentState == STATE_TEXT_MENU) currentState = STATE_ACTION_SELECT;
+else if (currentState == STATE_INBOX_MENU) currentState = STATE_MAIN_HUB;
+else if (currentState == STATE_HW_CONFIG) currentState = STATE_MAIN_HUB;
+delay(200);
+} else if (!rightPressed) { lastRightState = false; }
+static bool leftState = false;
+if (leftPressed && !leftState) {
+leftState = true;
+if (currentState == STATE_MAIN_HUB) currentHubIdx = (currentHubIdx + 1) % 4;
+else if (currentState == STATE_SERVER_SELECT) currentServerIdx = (currentServerIdx + 1) % 3;
+else if (currentState == STATE_ESP_SELECT) currentEspIdx = (currentEspIdx + 1) % 4;
+else if (currentState == STATE_ACTION_SELECT) currentActionIdx = (currentActionIdx + 1) % 2;
+else if (currentState == STATE_TEXT_MENU) currentTextOptIdx = (currentTextOptIdx + 1) % 4;
+delay(150);
+} else if (!leftPressed) { leftState = false; }
+static bool lastMidState = false;
+if (midPressed && !lastMidState) {
+lastMidState = true;
+if (currentState == STATE_MAIN_HUB) {
+if (currentHubIdx == 0) currentState = STATE_SERVER_SELECT;
+else if (currentHubIdx == 1) currentState = STATE_INBOX_MENU;
+else currentState = STATE_HW_CONFIG;
+}
+else if (currentState == STATE_SERVER_SELECT) currentState = STATE_ESP_SELECT;
+else if (currentState == STATE_ESP_SELECT) currentState = STATE_ACTION_SELECT;
+else if (currentState == STATE_ACTION_SELECT) {
+if (currentActionIdx == 0) { currentState = STATE_VOICE_RECORD; recordVoiceNoteBuffer(); currentState = STATE_ACTION_SELECT; transmitVoicePacketOverAir(); }
+else currentState = STATE_TEXT_MENU;
+}
+else if (currentState == STATE_TEXT_MENU) {
+handleTransmitText(textMenuList[currentTextOptIdx]); currentState = STATE_ACTION_SELECT;
+}
+else if (currentState == STATE_INBOX_MENU) {
+if (currentInboxChoiceIdx == 0) currentState = STATE_INBOX_TEXT;
+else currentState = STATE_INBOX_VOICE;
+}
+delay(200);
+} else if (!midPressed) { lastMidState = false; }
+}
+void updateUI() {
+if (!isDisplayPoweredOn) return;
+display.clearDisplay();
+if (currentState == STATE_MAIN_HUB) {
+drawHeader("OFF-GRID RADIO NETWORK");
+drawSelector(currentHubIdx, 4, mainHubOptions);
+}
+else if (currentState == STATE_SERVER_SELECT) {
+drawHeader("SELECT SERVER");
+drawSelector(currentServerIdx, 3, serverList);
+}
+else if (currentState == STATE_ESP_SELECT) {
+drawHeader("SELECT NODE");
+drawSelector(currentEspIdx, 4, espList);
+}
+else if (currentState == STATE_ACTION_SELECT) {
+char headerBuf[64];
+snprintf(headerBuf, sizeof(headerBuf), "TASK: %s", espList[currentEspIdx]);
+drawHeader(headerBuf);
+drawSelector(currentActionIdx, 2, actionList);
+}
+else if (currentState == STATE_TEXT_MENU) {
+drawHeader("TEXT PAYLOAD OPT");
+drawSelector(currentTextOptIdx, 4, textMenuList);
+}
+else if (currentState == STATE_HW_CONFIG) {
+drawHeader("POWER DIAGNOSTICS");
+display.setCursor(0, 14); display.print(F("Power: ")); display.print(currentTxPowerDbm); display.print(F(" dBm"));
+display.setCursor(0, 25); display.print(F("Range Cap: ")); display.print(calculatedMaxRangeKm, 2); display.print(F(" km"));
+}
+display.display();
+}
+void drawHeader(const char* title) {
+display.setTextSize(1); display.setCursor(0, 0); display.print(title);
+display.drawFastHLine(0, 11, SCREEN_WIDTH, SSD1306_WHITE);
+}
+void drawSelector(int idx, int total, const char* items[]) {
+for (int i = 0; i < total; i++) {
+int y = 16 + (i * 14);
+if (i == idx) {
+display.fillRect(0, y - 2, SCREEN_WIDTH, 11, SSD1306_WHITE);
+display.setTextColor(SSD1306_BLACK);
+} else {
+display.setTextColor(SSD1306_WHITE);
+}
+display.setCursor(4, y); display.print(items[i]);
+}
+display.setTextColor(SSD1306_WHITE);
+}
+void drawVoiceUI(unsigned long elapsed) {
+display.clearDisplay();
+drawHeader("RECORDING AUDIO");
+display.setTextSize(1); display.setCursor(0, 16); display.print((float)elapsed / 1000.0, 1); display.print(F("s / 10s"));
+display.drawRect(0, 28, SCREEN_WIDTH, 6, SSD1306_WHITE);
+display.fillRect(0, 28, map(elapsed, 0, 10000, 0, SCREEN_WIDTH), 6, SSD1306_WHITE);
+}
