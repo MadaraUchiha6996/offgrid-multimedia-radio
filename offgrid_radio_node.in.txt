@@ -11,14 +11,12 @@
 #define OLED_RESET    -1
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-// --- HARDWARE PIN CONFIGURATIONS ---
 #define BTN_LEFT   2   
 #define BTN_MID    3   
 #define BTN_RIGHT  4   
-#define POT_PIN    1   // Range Potentiometer
-#define BUZZER_PIN 9   // Hardware Buzzer/Audio alert pin configuration
+#define POT_PIN    1   
+#define BUZZER_PIN 9   
 
-// --- PHYSICAL AUDIO CAPTURE & DAC BUS PIN MAPPING ---
 #define I2S_MIC_WS   42
 #define I2S_MIC_SD   41
 #define I2S_MIC_SCK  40
@@ -26,7 +24,6 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define I2S_SPK_SD   38
 #define I2S_SPK_SCK  37
 
-// --- WAVESHARE SX1262 SPI PIN MAPPINGS ---
 #define LORA_NSS   7   
 #define LORA_RXEN  13  
 #define LORA_TXEN  14  
@@ -36,21 +33,18 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 SX1262 radio = new Module(LORA_NSS, LORA_DIO1, LORA_NRST, LORA_BUSY);
 
-// --- TIMING CONSTANTS ---
 #define INTRO_HOLD_MS    1500
 #define RECORD_MAX_MS    10000
 #define TX_HOLD_MS       5000   
 #define DELETE_HOLD_MS   2000  
-#define OLED_TIMEOUT_MS  360000 // 6 minutes in milliseconds (6 * 60 * 1000)
-#define POPUP_HOLD_MS    4000   // 4-second animation flash window
+#define OLED_TIMEOUT_MS  360000 
+#define POPUP_HOLD_MS    4000   
 
-// --- VOICE AUDIO BUFFER INFRASTRUCTURE ---
 #define AUDIO_SAMPLE_RATE 8000 
 #define AUDIO_BUFFER_SIZE (AUDIO_SAMPLE_RATE * 10) 
 uint8_t* voiceStorageBuffer = NULL; 
 uint32_t activeAudioDataSize = 0;
 
-// --- SYSTEM STATE MACHINE ---
 enum SystemState {
   STATE_WELCOME,
   STATE_MAIN_HUB,        
@@ -74,7 +68,6 @@ enum SystemState {
 SystemState currentState = STATE_WELCOME;
 SystemState prePopupState = STATE_MAIN_HUB; 
 
-// --- MENU DATA STRUCTURES ---
 const char* mainHubOptions[] = {"[ SEND MESSAGES ]", "[ OPEN INBOX ]", "[ RSSI RADIUS TRACK ]", "[ POWER & HW CONFIG ]"};
 int totalHubOptions = 4; 
 int currentHubIdx = 0;
@@ -123,11 +116,9 @@ int currentEnvIdx = 0;
 bool isIndoorEnvironment = false; 
 bool trackingEngineActive = true;       
 
-// Hardware Global Variables
 int currentTxPowerDbm = 10; 
 float calculatedMaxRangeKm = 0.0;
 
-// Power & Popup Timing Control Variables
 unsigned long lastActivityTime = 0;
 bool isDisplayPoweredOn = true;
 unsigned long popupStartTime = 0;
@@ -161,7 +152,6 @@ int activePressedPin = -1;
 bool midBtnActive = false;
 unsigned long midBtnPressTime = 0;
 
-// --- PROTOTYPES ---
 void handleWelcomeAnimation();
 void checkButtons();
 void updateUI();
@@ -195,12 +185,10 @@ void setup() {
 
   voiceStorageBuffer = (uint8_t*)malloc(AUDIO_BUFFER_SIZE);
   if(voiceStorageBuffer == NULL) {
-    Serial.println(F("[ERROR]: Failed to allocate Voice Note RAM cache boundary."));
     while(1);
   }
 
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
-    Serial.println(F("SSD1306 allocation failed"));
     while(1);
   }
   
@@ -210,19 +198,15 @@ void setup() {
   
   initHardwareAudioI2S();
 
-  Serial.print(F("[LORA] Initializing Sub-GHz module... "));
   int state = radio.begin(868.0, 125.0, 9, 7, (uint8_t)0x12, currentTxPowerDbm, 8);
   if (state == RADIOLIB_ERR_NONE) {
-    Serial.println(F("Success!"));
     handleTransmitText("[SYS_INIT]: NODE_ONLINE");
-    
     radio.startReceive();
     digitalWrite(LORA_RXEN, HIGH); 
     digitalWrite(LORA_TXEN, LOW);
   } else {
-    Serial.print(F("Failed, code: ")); Serial.println(state);
     display.clearDisplay(); display.setCursor(0,20); 
-    display.print(F("SX1262 Error!\nCheck Bus Wiring.")); 
+    display.print(F("SX1262 Error!")); 
     display.display();
     while(1);
   }
@@ -243,8 +227,6 @@ void loop() {
 }
 
 void initHardwareAudioI2S() {
-  Serial.println(F("[I2S INTERFACE] Initializing internal audio buses..."));
-  
   i2s_config_t micConfig = {
     .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX), 
     .sample_rate = AUDIO_SAMPLE_RATE,
@@ -266,11 +248,9 @@ void initHardwareAudioI2S() {
 
   i2s_driver_install(I2S_NUM_0, &micConfig, 0, NULL);
   i2s_set_pin(I2S_NUM_0, &micPins);
-  Serial.println(F("[I2S MIC] INMP441 background logic drivers locked."));
 }
 
 void recordVoiceNoteBuffer() {
-  Serial.println(F("[I2S RECORD] Opening memory pipeline. Capturing..."));
   size_t bytesRead = 0;
   unsigned long startT = millis();
   activeAudioDataSize = 0;
@@ -281,438 +261,5 @@ void recordVoiceNoteBuffer() {
     if(activeAudioDataSize >= AUDIO_BUFFER_SIZE - 1024) break;
     
     drawVoiceUI(millis() - startT);
-    display.display();
   }
-  
-  localVoiceNoteExists = true;
-  localVoiceSender = "Local Node (Me)";
 }
-
-void playActiveVoiceBuffer() {
-  if (!localVoiceNoteExists || activeAudioDataSize == 0) return;
-  size_t bytesWritten = 0;
-  uint32_t playPointer = 0;
-  i2s_zero_dma_buffer(I2S_NUM_0);
-  
-  while(playPointer < activeAudioDataSize && isPlayingVoiceNote) {
-    i2s_write(I2S_NUM_0, (void*)(voiceStorageBuffer + playPointer), 1024, &bytesWritten, portMAX_DELAY);
-    playPointer += bytesWritten;
-    
-    display.clearDisplay();
-    drawHeader("PLAYING VOICE NOTE");
-    display.setCursor(0, 20); display.print(F("Streaming Audio Cache..."));
-    for (int x = 0; x < SCREEN_WIDTH; x += 6) {
-      int amp = abs(sin((float)(millis() + x) * 0.04) * 8.0);
-      display.drawFastVLine(x, SCREEN_HEIGHT - amp, amp, SSD1306_WHITE);
-    }
-    display.display();
-    if(digitalRead(BTN_MID) == LOW) { delay(200); break; }
-  }
-  isPlayingVoiceNote = false;
-  i2s_zero_dma_buffer(I2S_NUM_0);
-}
-
-void transmitVoicePacketOverAir() {
-  if(activeAudioDataSize == 0) return;
-  display.clearDisplay();
-  display.setCursor(10, 25); display.print(F("COMPRESSING AUDIO..."));
-  display.display();
-  
-  // FIXED: Attached size bracket definition to compile smoothly
-  char packetHeader[128];
-  snprintf(packetHeader, sizeof(packetHeader), "[V_NOTE:#%s:%u]", espList[currentEspIdx], activeAudioDataSize);
-  
-  digitalWrite(LORA_RXEN, LOW); digitalWrite(LORA_TXEN, HIGH);
-  radio.transmit(packetHeader);
-  radio.startReceive(); digitalWrite(LORA_RXEN, HIGH); digitalWrite(LORA_TXEN, LOW);
-}
-
-void parseNetworkPacketPayload(String textData, float rssi, float snr) {
-  if (textData.indexOf("[SYS_INIT]") >= 0) return;
-  
-  for(int i = 0; i < totalTrackedDevices; i++) {
-if(textData.indexOf(trackerRoster[i].id) >= 0 || (i == 0 && textData.indexOf("996") >= 0)) {
-trackerRoster[i].liveRssi = rssi;
-trackerRoster[i].liveSnr  = snr;
-trackerRoster[i].lastSeenMs = millis();
-trackerRoster[i].calculatedRadiusKm = calculateRadiusFromRssi(rssi, isIndoorEnvironment);
-wakeDisplay();
-triggerAlertBeep();
-}
-}
-}
-void processIncomingRadioTraffic() {
-if (digitalRead(LORA_DIO1) == HIGH) {
-String packetStr = "";
-packetStr.reserve(64);
-int state = radio.readData(packetStr);
-if (state == RADIOLIB_ERR_NONE) {
-parseNetworkPacketPayload(packetStr, radio.getRSSI(), radio.getSNR());
-if (currentState != STATE_MAIL_POPUP && packetStr.indexOf("[SYS_INIT]") < 0) {
-prePopupState = currentState;
-currentState = STATE_MAIL_POPUP;
-popupStartTime = millis();
-}
-}
-radio.startReceive(); digitalWrite(LORA_RXEN, HIGH); digitalWrite(LORA_TXEN, LOW);
-}
-}
-void handleTransmitText(const char* payload) {
-display.clearDisplay(); display.setCursor(10, 25); display.print(F("TX FLASH PACKET...")); display.display();
-// FIXED: Attached array bracket to handle outgoing envelope payload arrays smoothly
-char structuredPayload[256];
-snprintf(structuredPayload, sizeof(structuredPayload), "[SRC:MY_NODE][DST:%s] %s", espList[currentEspIdx], payload);
-digitalWrite(LORA_RXEN, LOW); digitalWrite(LORA_TXEN, HIGH);
-radio.transmit(structuredPayload);
-radio.startReceive(); digitalWrite(LORA_RXEN, HIGH); digitalWrite(LORA_TXEN, LOW);
-lastActivityTime = millis();
-delay(500);
-}
-void wakeDisplay() {
-if (!isDisplayPoweredOn) { display.ssd1306_command(SSD1306_DISPLAYON); isDisplayPoweredOn = true; }
-lastActivityTime = millis();
-}
-void checkPowerTimeout() {
-if (currentState != STATE_MAIL_POPUP && currentState != STATE_WELCOME && isDisplayPoweredOn) {
-if (millis() - lastActivityTime >= OLED_TIMEOUT_MS) {
-display.ssd1306_command(SSD1306_DISPLAYOFF); isDisplayPoweredOn = false;
-}
-}
-}
-void triggerAlertBeep() {
-digitalWrite(BUZZER_PIN, HIGH); delay(150); digitalWrite(BUZZER_PIN, LOW); delay(100);
-digitalWrite(BUZZER_PIN, HIGH); delay(150); digitalWrite(BUZZER_PIN, LOW);
-}
-void readHardwarePotentiometer() {
-int rawAdc = analogRead(POT_PIN);
-int targetPower = map(rawAdc, 0, 4095, 2, 22);
-if (targetPower != currentTxPowerDbm) {
-currentTxPowerDbm = targetPower;
-radio.setOutputPower(currentTxPowerDbm);
-if (isIndoorEnvironment) calculatedMaxRangeKm = map(currentTxPowerDbm, 2, 22, 1, 5) / 10.0;
-else calculatedMaxRangeKm = map(currentTxPowerDbm, 2, 22, 5, 60) / 10.0;
-if(!isDisplayPoweredOn) wakeDisplay();
-else lastActivityTime = millis();
-}
-}
-float calculateRadiusFromRssi(float rssi, bool indoor) {
-float measuredPower = -42.0; float pathLossExponent = indoor ? 4.2 : 2.5;
-if (rssi >= 0) return 0.0;
-return pow(10.0, (measuredPower - rssi) / (10.0 * pathLossExponent)) / 1000.0;
-}
-void handleWelcomeAnimation() {
-int textY = SCREEN_HEIGHT;
-while(textY >= (SCREEN_HEIGHT / 2) - 4) {
-display.clearDisplay(); display.setTextSize(2); display.setCursor(24, textY); display.print(F("WELCOME")); display.display();
-textY -= 2; delay(15);
-}
-delay(INTRO_HOLD_MS);
-}
-void checkButtons() {
-bool leftPressed  = (digitalRead(BTN_LEFT) == LOW);
-bool midPressed   = (digitalRead(BTN_MID) == LOW);
-bool rightPressed = (digitalRead(BTN_RIGHT) == LOW);
-if (!isDisplayPoweredOn && (leftPressed || midPressed || rightPressed)) { wakeDisplay(); delay(300); return; }
-if (leftPressed || midPressed || rightPressed) lastActivityTime = millis();
-if (currentState == STATE_MAIL_POPUP) return;
-if (currentState == STATE_INBOX_TEXT || currentState == STATE_INBOX_VOICE) {
-int currentPressedPin = leftPressed ? BTN_LEFT : (midPressed ? BTN_MID : (rightPressed ? BTN_RIGHT : -1));
-if (currentPressedPin != -1) {
-if (activePressedPin == -1) { activePressedPin = currentPressedPin; buttonPressStartTime = millis(); }
-else if (millis() - buttonPressStartTime >= DELETE_HOLD_MS) {
-if (currentState == STATE_INBOX_TEXT && totalStoredTexts > 0) { totalStoredTexts--; }
-else if (currentState == STATE_INBOX_VOICE && localVoiceNoteExists) { localVoiceNoteExists = false; isPlayingVoiceNote = false; activeAudioDataSize = 0; }
-activePressedPin = -1; delay(400); return;
-}
-} else {
-if (activePressedPin != -1 && (millis() - buttonPressStartTime < DELETE_HOLD_MS)) {
-if (activePressedPin == BTN_LEFT) {
-if (currentState == STATE_INBOX_TEXT) currentTextMsgIdx = (currentTextMsgIdx + 1) % totalStoredTexts;
-} else if (activePressedPin == BTN_MID) {
-if (currentState == STATE_INBOX_VOICE && localVoiceNoteExists) {
-isPlayingVoiceNote = !isPlayingVoiceNote;
-if(isPlayingVoiceNote) playActiveVoiceBuffer();
-}
-} else if (activePressedPin == BTN_RIGHT) { currentState = STATE_INBOX_MENU; isPlayingVoiceNote = false; }
-activePressedPin = -1; delay(200);
-}
-}
-return;
-}
-static bool lastRightState = false;
-if (rightPressed && !lastRightState) {
-lastRightState = true;
-switch(currentState) {
-case STATE_SERVER_SELECT:   currentState = STATE_MAIN_HUB; break;
-case STATE_ESP_SELECT:      currentState = STATE_SERVER_SELECT; break;
-case STATE_ACTION_SELECT:   currentState = STATE_ESP_SELECT; break;
-case STATE_VOICE_RECORD:    currentState = STATE_ACTION_SELECT; break;
-case STATE_TEXT_MENU:       currentState = STATE_ACTION_SELECT; break;
-case STATE_TEXT_CUSTOM:     currentState = STATE_TEXT_MENU; customMessage = ""; customMsgLen = 0; break;
-case STATE_INBOX_MENU:      currentState = STATE_MAIN_HUB; break;
-case STATE_VOICE_REQUEST:   currentState = STATE_INBOX_VOICE; break;
-case STATE_GPS_ENV_PROMPT:  currentState = STATE_MAIN_HUB; break;
-case STATE_GPS_MENU:        currentState = STATE_GPS_ENV_PROMPT; break;
-case STATE_GPS_ROSTER:      currentState = STATE_GPS_MENU; break;
-case STATE_GPS_DETAILS:     currentState = STATE_GPS_ROSTER; break;
-case STATE_HW_CONFIG:       currentState = STATE_MAIN_HUB; break;
-default: break;
-}
-delay(200);
-} else if (!rightPressed) { lastRightState = false; }
-static bool lastLeftState = false;
-if (leftPressed && !lastLeftState) {
-lastLeftState = true;
-switch(currentState) {
-case STATE_MAIN_HUB:      currentHubIdx = (currentHubIdx + 1) % totalHubOptions; break;
-case STATE_SERVER_SELECT: currentServerIdx = (currentServerIdx + 1) % totalServers; break;
-case STATE_ESP_SELECT:    currentEspIdx = (currentEspIdx + 1) % totalEsps; break;
-case STATE_ACTION_SELECT: currentActionIdx = (currentActionIdx + 1) % totalActions; break;
-case STATE_TEXT_MENU:     currentTextOptIdx = (currentTextOptIdx + 1) % totalTextOptions; break;
-case STATE_INBOX_MENU:    currentInboxChoiceIdx = (currentInboxChoiceIdx + 1) % 2; break;
-case STATE_VOICE_REQUEST: currentLogIdx = (currentLogIdx + 1) % totalServerLogs; break;
-case STATE_GPS_ENV_PROMPT: currentEnvIdx = (currentEnvIdx + 1) % 2; break;
-case STATE_GPS_MENU:       currentEnvIdx = (currentEnvIdx + 1) % 2; break;
-case STATE_GPS_ROSTER:     currentRosterIdx = (currentRosterIdx + 1) % totalTrackedDevices; break;
-case STATE_TEXT_CUSTOM:
-if (currentLetterIdx == 0) currentLetterIdx = totalLetters - 1;
-else currentLetterIdx--;
-break;
-default: break;
-}
-delay(150);
-} else if (!leftPressed) { lastLeftState = false; }
-if (currentState == STATE_TEXT_CUSTOM) {
-if (midPressed) {
-if (!midBtnActive) { midBtnActive = true; midBtnPressTime = millis(); }
-else if (millis() - midBtnPressTime >= TX_HOLD_MS) {
-if (customMessage.length() > 0) { handleTransmitText(customMessage.c_str()); currentState = STATE_ACTION_SELECT; customMessage = ""; customMsgLen = 0; }
-midBtnActive = false; delay(400);
-}
-} else {
-if (midBtnActive) {
-if (millis() - midBtnPressTime < TX_HOLD_MS) {
-if (alphabet[currentLetterIdx] == '<') { if (customMessage.length() > 0) { customMessage.remove(customMessage.length() - 1); } }
-else if (customMessage.length() < 30) { customMessage += alphabet[currentLetterIdx]; }
-}
-midBtnActive = false; delay(200);
-}
-}
-} else {
-static bool lastMidState = false;
-if (midPressed && !lastMidState) {
-lastMidState = true;
-switch(currentState) {
-case STATE_MAIN_HUB:
-if (currentHubIdx == 0) currentState = STATE_SERVER_SELECT;
-else if (currentHubIdx == 1) currentState = STATE_INBOX_MENU;
-else if (currentHubIdx == 2) { currentState = STATE_GPS_ENV_PROMPT; currentEnvIdx = 0; }
-else { currentState = STATE_HW_CONFIG; }
-break;
-case STATE_SERVER_SELECT: currentState = STATE_ESP_SELECT; break;
-case STATE_ESP_SELECT:    currentState = STATE_ACTION_SELECT; break;
-case STATE_ACTION_SELECT:
-if (currentActionIdx == 0) { currentState = STATE_VOICE_RECORD; recordVoiceNoteBuffer(); currentState = STATE_ACTION_SELECT; transmitVoicePacketOverAir(); }
-else currentState = STATE_TEXT_MENU;
-break;
-case STATE_TEXT_MENU:
-if (currentTextOptIdx == 3) { currentState = STATE_TEXT_CUSTOM; currentLetterIdx = 0; }
-else { handleTransmitText(textMenuList[currentTextOptIdx]); currentState = STATE_ACTION_SELECT; }
-break;
-case STATE_INBOX_MENU:
-if (currentInboxChoiceIdx == 0) currentState = STATE_INBOX_TEXT;
-else currentState = STATE_INBOX_VOICE;
-break;
-case STATE_VOICE_REQUEST: currentState = STATE_INBOX_MENU; break;
-case STATE_GPS_ENV_PROMPT:
-isIndoorEnvironment = (currentEnvIdx == 1); currentState = STATE_GPS_MENU; currentEnvIdx = 0;
-break;
-case STATE_GPS_MENU:
-if(currentEnvIdx == 0) { trackingEngineActive = !trackingEngineActive; if(trackingEngineActive) { radio.startReceive(); } }
-else { currentState = STATE_GPS_ROSTER; currentRosterIdx = 0; }
-break;
-case STATE_GPS_ROSTER: currentState = STATE_GPS_DETAILS; break;
-default: break;
-}
-delay(200);
-} else if (!midPressed) { lastMidState = false; }
-}
-}
-void updateUI() {
-if (!isDisplayPoweredOn) return;
-display.clearDisplay();
-switch(currentState) {
-case STATE_MAIN_HUB:
-drawHeader("OFF-GRID RADIO NETWORK");
-for(int i = 0; i < totalHubOptions; i++) {
-int yPos = 13 + (i * 12);
-if(i == currentHubIdx) { display.fillRect(0, yPos - 1, SCREEN_WIDTH, 11, SSD1306_WHITE); display.setTextColor(SSD1306_BLACK); }
-else { display.setTextColor(SSD1306_WHITE); }
-display.setCursor(4, yPos); display.print(mainHubOptions[i]);
-}
-display.setTextColor(SSD1306_WHITE); break;
-case STATE_SERVER_SELECT:
-drawHeader("SELECT SERVER"); drawSelector(currentServerIdx, totalServers, serverList); break;
-case STATE_ESP_SELECT:
-drawHeader("SELECT NODE"); drawSelector(currentEspIdx, totalEsps, espList); break;
-case STATE_ACTION_SELECT:
-if (currentEspIdx == 0) drawHeader("TASK: BROADCAST");
-else {
-// FIXED: Set array dimensions cleanly to pass compilation check windows
-char headerBuf[64];
-snprintf(headerBuf, sizeof(headerBuf), "TASK: %s", espList[currentEspIdx]);
-drawHeader(headerBuf);
-}
-drawSelector(currentActionIdx, totalActions, actionList); break;
-case STATE_VOICE_RECORD: {
-drawHeader("RECORDING AUDIO");
-break;
-}
-case STATE_TEXT_MENU:
-drawHeader("TEXT PAYLOAD OPT"); drawSelector(currentTextOptIdx, totalTextOptions, textMenuList); break;
-case STATE_TEXT_CUSTOM:
-drawHeader("TYPE CUSTOM MESSAGE");
-display.setTextSize(1); display.setCursor(0, 16); display.print(F("> ")); display.print(customMessage);
-if(millis() % 500 < 250) display.print(F("|"));
-display.drawFastHLine(0, 36, SCREEN_WIDTH, SSD1306_WHITE);
-int prevIdx, nextIdx;
-prevIdx = (currentLetterIdx == 0) ? totalLetters - 1 : currentLetterIdx - 1;
-nextIdx = (currentLetterIdx == totalLetters - 1) ? 0 : currentLetterIdx + 1;
-display.setTextColor(SSD1306_WHITE); display.setCursor(45, 40);
-if(alphabet[prevIdx] == '<') display.print(F("<-")); else if(alphabet[prevIdx] == ' ') display.print(F("[SP]")); else display.print(alphabet[prevIdx]);
-display.fillRect(40, 50, 26, 13, SSD1306_WHITE); display.setTextColor(SSD1306_BLACK); display.setCursor(48, 53);
-if(alphabet[currentLetterIdx] == '<') display.print(F("<-")); else if(alphabet[currentLetterIdx] == ' ') display.print(F("[SP]")); else display.print(alphabet[currentLetterIdx]);
-display.setTextColor(SSD1306_WHITE); display.setCursor(75, 40);
-if(alphabet[nextIdx] == '<') display.print(F("<-")); else if(alphabet[nextIdx] == ' ') display.print(F("[SP]")); else display.print(alphabet[nextIdx]);
-if(midBtnActive && (millis() - midBtnPressTime > 500)) {
-display.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SSD1306_BLACK); display.setCursor(20, 24); display.print(F("HOLDING TO SEND..."));
-int sendProg = map(millis() - midBtnPressTime, 0, TX_HOLD_MS, 0, SCREEN_WIDTH); display.fillRect(0, 40, sendProg, 8, SSD1306_WHITE);
-}
-break;
-case STATE_INBOX_MENU:
-drawHeader("INBOX ARCHIVES"); drawSelector(currentInboxChoiceIdx, 2, inboxChoices); break;
-case STATE_INBOX_TEXT:
-drawHeader("VIEWING TEXT MESSAGES");
-if (totalStoredTexts == 0) { display.setCursor(15, 30); display.print(F("[ Inbox Empty ]")); }
-else {
-display.setCursor(0, 16); display.print(F("Msg ")); display.print(currentTextMsgIdx + 1); display.print(F("/")); display.print(totalStoredTexts);
-display.drawFastHLine(0, 26, SCREEN_WIDTH, SSD1306_WHITE); display.setCursor(0, 32); display.print(storedTexts[currentTextMsgIdx]);
-display.setCursor(0, 54); display.print(F("[HOLD ANY BTN TO DEL]"));
-}
-break;
-case STATE_INBOX_VOICE:
-drawHeader("VIEWING VOICE NOTE");
-if (!localVoiceNoteExists) {
-display.setCursor(0, 16); display.print(F("Slot open. Incoming\nnotes bounce to server"));
-display.drawFastHLine(0, 34, SCREEN_WIDTH, SSD1306_WHITE); display.fillRect(0, 40, SCREEN_WIDTH, 14, SSD1306_WHITE);
-display.setTextColor(SSD1306_BLACK); display.setCursor(4, 43); display.print(F("> REQ PAST VOICE LOG")); display.setTextColor(SSD1306_WHITE);
-if (digitalRead(BTN_MID) == LOW) { currentState = STATE_VOICE_REQUEST; currentLogIdx = 0; delay(200); }
-} else {
-display.setCursor(0, 16); display.print(F("From: ")); display.print(localVoiceSender); display.setCursor(0, 28);
-display.print(F("STATUS: READY TO PLAY"));
-display.setCursor(0, 40); display.print(F("[MID] Play Track")); display.setCursor(0, 52); display.print(F("[HOLD ANY BTN TO DEL]"));
-}
-break;
-case STATE_VOICE_REQUEST:
-drawHeader("SERVER COPIES AVAILABLE");
-for(int i = 0; i < totalServerLogs; i++) {
-int yPos = 14 + (i * 15);
-if(i == currentLogIdx) { display.fillRect(0, yPos - 1, SCREEN_WIDTH, 14, SSD1306_WHITE); display.setTextColor(SSD1306_BLACK); } else { display.setTextColor(SSD1306_WHITE); }
-display.setCursor(2, yPos); display.print(serverHistory[i].timestamp); display.setCursor(55, yPos); display.print(serverHistory[i].textPreview);
-}
-display.setTextColor(SSD1306_WHITE); break;
-case STATE_GPS_ENV_PROMPT:
-drawHeader("ENVIRONMENT SETUP"); display.setCursor(0, 14); display.print(F("Calibrate path loss:"));
-for(int i = 0; i < 2; i++) {
-int yPos = 30 + (i * 16);
-if(i == currentEnvIdx) { display.fillRect(0, yPos - 2, SCREEN_WIDTH, 13, SSD1306_WHITE); display.setTextColor(SSD1306_BLACK); }
-else { display.setTextColor(SSD1306_WHITE); }
-display.setCursor(10, yPos); display.print(envOptions[i]);
-}
-display.setTextColor(SSD1306_WHITE); break;
-case STATE_GPS_MENU:
-drawHeader("RADIUS CORE INTERFACE");
-if(currentEnvIdx == 0) { display.fillRect(0, 16, SCREEN_WIDTH, 13, SSD1306_WHITE); display.setTextColor(SSD1306_BLACK); }
-display.setCursor(4, 19); display.print(F("Engine Switch: ")); display.print(trackingEngineActive ? F("[ RUNNING ]") : F("[ OFF ]"));
-display.setTextColor(SSD1306_WHITE);
-if(currentEnvIdx == 1) { display.fillRect(0, 34, SCREEN_WIDTH, 13, SSD1306_WHITE); display.setTextColor(SSD1306_BLACK); }
-display.setCursor(4, 37); display.print(F("> ARROW TRACK ROSTER")); display.setTextColor(SSD1306_WHITE);
-display.drawFastHLine(0, 52, SCREEN_WIDTH, SSD1306_WHITE); display.setCursor(4, 55); display.print(F("Cal: ")); display.print(isIndoorEnvironment ? F("INDOOR (High Loss)") : F("OUTDOOR"));
-break;
-case STATE_GPS_ROSTER:
-drawHeader("LIVE PEER CIRCLES");
-for (int i = 0; i < totalTrackedDevices; i++) {
-int yPos = 16 + (i * 15);
-if (i == currentRosterIdx) { display.fillRect(0, yPos - 2, SCREEN_WIDTH, 13, SSD1306_WHITE); display.setTextColor(SSD1306_BLACK); } else { display.setTextColor(SSD1306_WHITE); }
-display.setCursor(4, yPos); display.print(trackerRoster[i].id);
-if (millis() - trackerRoster[i].lastSeenMs > 30000 || trackerRoster[i].lastSeenMs == 0) { display.setCursor(85, yPos); display.print(F("[OFFLINE]")); }
-else { display.setCursor(90, yPos); display.print(trackerRoster[i].calculatedRadiusKm, 2); display.print(F("k")); }
-}
-display.setTextColor(SSD1306_WHITE); break;
-case STATE_GPS_DETAILS: {
-PeerDevice activeNode = trackerRoster[currentRosterIdx];
-// FIXED: Attached size bounds bracket definition directly to clear character array allocations
-char titleBuf[64];
-snprintf(titleBuf, sizeof(titleBuf), "LOC: %s", activeNode.id);
-drawHeader(titleBuf);
-if (millis() - activeNode.lastSeenMs > 30000 || activeNode.lastSeenMs == 0) { display.setCursor(20, 30); display.print(F("Device is Out of\n   Radio Range")); }
-else {
-display.setCursor(0, 16); display.print(F("Calc Radius: ")); display.print(activeNode.calculatedRadiusKm, 2); display.print(F(" km"));
-display.setCursor(0, 27); display.print(F("Signal Rssi: ")); display.print(activeNode.liveRssi, 1); display.print(F(" dBm"));
-display.setCursor(0, 38); display.print(F("Signal Snr : ")); display.print(activeNode.liveSnr, 1); display.print(F(" dB"));
-display.setCursor(0, 49); display.print(F("Vector Hdg : ")); display.print(activeNode.headingDegrees); display.print(F(" deg (")); display.print(activeNode.compass); display.print(F(")"));
-}
-break;
-}
-case STATE_HW_CONFIG: {
-drawHeader("POWER & HW DIAGNOSTICS");
-display.setCursor(0, 14); display.print(F("Module Power: ")); display.print(currentTxPowerDbm); display.print(F(" dBm"));
-int sliderWidth = map(currentTxPowerDbm, 2, 22, 0, 44);
-display.drawRect(80, 15, 44, 6, SSD1306_WHITE); display.fillRect(80, 15, sliderWidth, 6, SSD1306_WHITE);
-display.setCursor(0, 25); display.print(F("Max Range Cap: ")); display.print(calculatedMaxRangeKm, 2); display.print(F(" km"));
-display.setCursor(0, 36); display.print(F("Signal Sync : CONNECTED"));
-display.setCursor(0, 47); display.print(F("Battery Bank: 94% [STABLE]"));
-display.drawFastHLine(0, 56, SCREEN_WIDTH, SSD1306_WHITE); display.setCursor(4, 57);
-if(currentTxPowerDbm <= 8) display.print(F("Mode: Stealth (Eco)")); else if(currentTxPowerDbm <= 16) display.print(F("Mode: Medium Proximity")); else display.print(F("Mode: EXTRA MAXIMUM RADIUS"));
-break;
-}
-case STATE_MAIL_POPUP: {
-unsigned long elapsed = millis() - popupStartTime;
-if (elapsed >= POPUP_HOLD_MS) { currentState = prePopupState; lastActivityTime = millis(); }
-else {
-display.drawRect(34, 16, 60, 36, SSD1306_WHITE); display.drawLine(34, 16, 64, 36, SSD1306_WHITE); display.drawLine(94, 16, 64, 36, SSD1306_WHITE);
-if (millis() % 400 < 200) { display.fillRect(10, 54, SCREEN_WIDTH - 20, 10, SSD1306_WHITE); display.setTextColor(SSD1306_BLACK); display.setCursor(18, 55); display.print(F("!! NEW MAIL RECEIVED !!")); }
-display.setTextColor(SSD1306_WHITE);
-}
-break;
-}
-}
-display.display();
-}
-void drawHeader(const char* title) {
-display.setTextSize(1); display.setTextColor(SSD1306_WHITE); display.setCursor(0, 0); display.print(title);
-display.drawFastHLine(0, 11, SCREEN_WIDTH, SSD1306_WHITE);
-}
-void drawSelector(int currentIdx, int totalItems, const char* items[]) {
-display.setTextSize(1);
-for(int i = 0; i < totalItems; i++) {
-int yPos = 16 + (i * 14);
-if(i == currentIdx) { display.fillRect(0, yPos - 2, SCREEN_WIDTH, 11, SSD1306_WHITE); display.setTextColor(SSD1306_BLACK); }
-else { display.setTextColor(SSD1306_WHITE); }
-display.setCursor(4, yPos); display.print(items[i]);
-}
-display.setTextColor(SSD1306_WHITE);
-}
-void drawVoiceUI(unsigned long elapsed) {
-display.clearDisplay();
-drawHeader("RECORDING AUDIO");
-display.setTextSize(1); display.setCursor(0, 16); display.print(F("Time: ")); display.print((float)elapsed / 1000.0, 1); display.print(F("s / 10s"));
-int progressWidth = map(elapsed, 0, RECORD_MAX_MS, 0, SCREEN_WIDTH);
-display.drawRect(0, 28, SCREEN_WIDTH, 6, SSD1306_WHITE); display.fillRect(0, 28, progressWidth, 6, SSD1306_WHITE);
-display.setCursor(0, 40); display.print(F("Audio Wave:"));
-for (int x = 0; x < SCREEN_WIDTH; x += 4) {
-int amplitude = abs(sin((float)(millis() + x) * 0.2) * 12.0);
-display.drawFastVLine(x, SCREEN_HEIGHT - amplitude, amplitude, SSD1306_WHITE);
-}
-}
-
