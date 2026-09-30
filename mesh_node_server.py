@@ -1,60 +1,60 @@
 import time
 from packet import RadioPacket
-from services import GPSPayload, SystemBeaconPayload
 from routing import MeshRouter
 from security import OffGridCipher
+from services import SystemBeaconPayload
+
 
 class ESP32NodeServer:
+
     def __init__(self, node_id, air_interface):
         self.node_id = node_id
         self.air = air_interface
         self.rx_queue = self.air.register_node(node_id)
-        
         self.router = MeshRouter(node_id=node_id)
         self.cipher = OffGridCipher(key_phrase="DelhiOffGridEmergencyNetwork2026")
-        
-        self.local_inbox = []      
-        self.transit_buffer = []     
-        
+
+        self.local_inbox, self.transit_buffer = [], []
         self.connected_gateway_id = None
         self.packet_counter = 0
-        self.latitude = 28.6139  
-        self.longitude = 77.2090
+        self.latitude, self.longitude = 28.6139, 77.2090
 
     def update_gps(self, lat, lon):
-        self.latitude = lat
-        self.longitude = lon
+        self.latitude, self.longitude = lat, lon
+
+    def _send_pkt(self, p_type, dest, flags, payload, msg=""):
+        # Centralized packet factory builder to eliminate structural bloat
+        pkt = RadioPacket(
+            packet_type=p_type,
+            source_node=self.node_id,
+            dest_node=dest,
+            packet_id=self.packet_counter,
+            ttl=4,
+            flags=flags,
+            payload=payload,
+        )
+        self.packet_counter = (self.packet_counter + 1) & 0xFF  # Native fast bitmask
+        if msg:
+            print(msg)
+        self.air.broadcast_packet(self.node_id, pkt.serialize())
 
     def send_broadcast_text(self, text):
-        raw_payload = text.encode('utf-8')
-        encrypted_payload = self.cipher.process_payload(raw_payload)
-        
-        packet = RadioPacket(
-            packet_type=RadioPacket.TYPE_TEXT,
-            source_node=self.node_id,
-            dest_node=0xFFFF,  
-            packet_id=self.packet_counter,
-            ttl=4,
-            flags=0x02,  
-            payload=encrypted_payload
+        self._send_pkt(
+            RadioPacket.TYPE_TEXT,
+            0xFFFF,
+            0x02,
+            self.cipher.process_payload(text.encode("utf-8")),
+            f"Sending broadcast from node {self.node_id}",
         )
-        self.packet_counter = (self.packet_counter + 1) % 256
-        print(f"Sending broadcast from node {self.node_id}")
-        self.air.broadcast_packet(self.node_id, packet.serialize())
 
     def request_old_messages(self, target_server_id: int):
-        packet = RadioPacket(
-            packet_type=RadioPacket.TYPE_REQ_MSG,
-            source_node=self.node_id,
-            dest_node=target_server_id,
-            packet_id=self.packet_counter,
-            ttl=4,
-            flags=0x00,
-            payload=b""  
+        self._send_pkt(
+            RadioPacket.TYPE_REQ_MSG,
+            target_server_id,
+            0x00,
+            b"",
+            f"Requesting history logs from node {target_server_id}",
         )
-        self.packet_counter = (self.packet_counter + 1) % 256
-        print(f"Requesting history logs from node {target_server_id}")
-        self.air.broadcast_packet(self.node_id, packet.serialize())
 
     def process_radio_cycle(self):
         while not self.rx_queue.empty():
@@ -71,13 +71,13 @@ class ESP32NodeServer:
                 print(f"Forwarding packet from node {pkt.source_node}")
                 self.air.broadcast_packet(self.node_id, pkt.serialize())
 
-            if action in ["CONSUME_LOCAL", "CONSUME_AND_FORWARD"]:
+            if action in ("CONSUME_LOCAL", "CONSUME_AND_FORWARD"):
                 self._execute_local_server_logic(packet)
 
     def _execute_local_server_logic(self, packet):
         if packet.packet_type == RadioPacket.TYPE_ACK and packet.dest_node == 0xFFFF:
-            beacon = SystemBeaconPayload.deserialize(packet.payload)
-            if beacon and self.connected_gateway_id != packet.source_node:
+            b = SystemBeaconPayload.deserialize(packet.payload)
+            if b and self.connected_gateway_id != packet.source_node:
                 self.connected_gateway_id = packet.source_node
                 print(f"Connected to base node {self.connected_gateway_id}")
 
@@ -86,41 +86,48 @@ class ESP32NodeServer:
             self._flush_stored_transit_packets_for_node(packet.source_node)
 
         elif packet.packet_type == RadioPacket.TYPE_TEXT:
-            is_encrypted = (packet.flags & 0x02) != 0
-            payload = self.cipher.process_payload(packet.payload) if is_encrypted else packet.payload
-            decoded_text = payload.decode('utf-8', errors='ignore')
-            
-            self.local_inbox.append({"src": packet.source_node, "text": decoded_text, "time": time.time()})
+            p = (
+                self.cipher.process_payload(packet.payload)
+                if (packet.flags & 0x02)
+                else packet.payload
+            )
+            self.local_inbox.append(
+                {
+                    "src": packet.source_node,
+                    "text": p.decode("utf-8", errors="ignore"),
+                    "time": time.time(),
+                }
+            )
             print(f"Received message from node {packet.source_node}")
 
     def _flush_stored_transit_packets_for_node(self, target_node):
-        matching_frames = [p for p in self.transit_buffer if p.dest_node == target_node]
-        if not matching_frames:
-            return
+        # Native safe split execution without altering items inside the processing loop
+        to_send = [p for p in self.transit_buffer if p.dest_node == target_node]
+        self.transit_buffer = [p for p in self.transit_buffer if p.dest_node != target_node]
 
-        for pkt in matching_frames:
+        for pkt in to_send:
             self.air.broadcast_packet(self.node_id, pkt.serialize())
-            self.transit_buffer.remove(pkt)
-        print(f"Flushed history logs to node {target_node}")
+        if to_send:
+            print(f"Flushed history logs to node {target_node}")
+
 
 if __name__ == "__main__":
     from network_env import VirtualRadioAirInterface
-    
+
     air = VirtualRadioAirInterface()
-    node_A = ESP32NodeServer(node_id=201, air_interface=air)
-    node_B = ESP32NodeServer(node_id=202, air_interface=air)  
-    node_C = ESP32NodeServer(node_id=203, air_interface=air)  
-    
-    from services import SystemBeaconPayload
-    mock_beacon_payload = SystemBeaconPayload(server_node_id=1000, network_chan=4, flags=1, lat=28.6, lon=77.2).serialize()
-    beacon_packet = RadioPacket(packet_type=RadioPacket.TYPE_ACK, source_node=1000, dest_node=0xFFFF, packet_id=1, ttl=1, payload=mock_beacon_payload)
-    
+    node_A = ESP32NodeServer(201, air)
+    node_B = ESP32NodeServer(202, air)
+    node_C = ESP32NodeServer(203, air)
+
+    m_payload = SystemBeaconPayload(1000, 4, 1, 28.6, 77.2).serialize()
+    b_pkt = RadioPacket(RadioPacket.TYPE_ACK, 1000, 0xFFFF, 1, 1, payload=m_payload)
+
     print("Testing tracking...")
-    air.broadcast_packet(sender_id=1000, raw_frame=beacon_packet.serialize())
+    air.broadcast_packet(1000, b_pkt.serialize())
     node_A.process_radio_cycle()
     node_B.process_radio_cycle()
-    
+
     print("Testing propagation...")
     node_A.send_broadcast_text("Alert: Grid Offline")
-    node_B.process_radio_cycle()  
-    node_C.process_radio_cycle()  
+    node_B.process_radio_cycle()
+    node_C.process_radio_cycle()
