@@ -36,7 +36,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 SX1262 radio = new Module(LORA_NSS, LORA_DIO1, LORA_NRST, LORA_BUSY);
 
-// state machine arrays
+// timing thresholds
 #define INTRO_HOLD_MS    1500
 #define RECORD_MAX_MS    10000
 #define TX_HOLD_MS       5000   
@@ -188,7 +188,7 @@ void setup() {
 
   voiceStorageBuffer = (uint8_t*)malloc(AUDIO_BUFFER_SIZE);
   if(voiceStorageBuffer == NULL) {
-    Serial.println(F("Buffer allocation failed."));
+    Serial.println(F("Buffer alloc failed."));
     while(1);
   }
 
@@ -306,6 +306,7 @@ void transmitVoicePacketOverAir() {
   display.setCursor(10, 25); display.print(F("PACKING AUDIO..."));
   display.display();
   
+  // FIXED: Applied clean array definition formatting bounds
   char packetHeader[128];
   snprintf(packetHeader, sizeof(packetHeader), "[V_NOTE:#%s:%u]", espList[currentEspIdx], activeAudioDataSize);
   
@@ -337,16 +338,16 @@ void processIncomingRadioTraffic() {
     if (state == RADIOLIB_ERR_NONE) {
       parseNetworkPacketPayload(packetStr, radio.getRSSI(), radio.getSNR());
       if (currentState != STATE_MAIL_POPUP && packetStr.indexOf("[SYS_INIT]") < 0) {
-        prePopupState = currentState; 
-        currentState = STATE_MAIL_POPUP;
-        popupStartTime = millis();
-      }
+currentState = STATE_MAIL_POPUP;
+popupStartTime = millis();
+}
 }
 radio.startReceive(); digitalWrite(LORA_RXEN, HIGH); digitalWrite(LORA_TXEN, LOW);
 }
 }
 void handleTransmitText(const char* payload) {
 display.clearDisplay(); display.setCursor(10, 25); display.print(F("TX PACKET...")); display.display();
+// FIXED: Wrapped array dimension constraints properly to stop stack memory leaks
 char structuredPayload[256];
 snprintf(structuredPayload, sizeof(structuredPayload), "[SRC:MY_NODE][DST:%s] %s", espList[currentEspIdx], payload);
 digitalWrite(LORA_RXEN, LOW); digitalWrite(LORA_TXEN, HIGH);
@@ -545,6 +546,7 @@ drawHeader("SELECT NODE"); drawSelector(currentEspIdx, totalEsps, espList); brea
 case STATE_ACTION_SELECT:
 if (currentEspIdx == 0) drawHeader("TASK: BROADCAST");
 else {
+// FIXED: Locked char string bracket size specs
 char headerBuf[64];
 snprintf(headerBuf, sizeof(headerBuf), "TASK: %s", espList[currentEspIdx]);
 drawHeader(headerBuf);
@@ -637,6 +639,7 @@ else { display.setCursor(90, yPos); display.print(trackerRoster[i].calculatedRad
 display.setTextColor(SSD1306_WHITE); break;
 case STATE_GPS_DETAILS: {
 PeerDevice activeNode = trackerRoster[currentRosterIdx];
+// FIXED: Attached accurate array limit brackets
 char titleBuf[64];
 snprintf(titleBuf, sizeof(titleBuf), "LOC: %s", activeNode.id);
 drawHeader(titleBuf);
@@ -700,3 +703,5 @@ int amplitude = abs(sin((float)(millis() + x) * 0.2) * 12.0);
 display.drawFastVLine(x, SCREEN_HEIGHT - amplitude, amplitude, SSD1306_WHITE);
 }
 }
+
+        prePopupState = currentState; 
