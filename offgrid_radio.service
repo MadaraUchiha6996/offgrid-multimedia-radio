@@ -1,16 +1,12 @@
 [Unit]
-Description=Off-Grid Portable Multimedia Radio Network Server Daemon
+Description=Off-Grid Radio Server
 After=network.target
 
 [Service]
-User=pi
 WorkingDirectory=/home/pi/OffGridRadioServer
-ExecStart=/usr/bin/python3 /home/pi/OffGridRadioServer/main_server.py
+ExecStart=/usr/bin/python3 main_server.py
 Restart=always
-RestartSec=5s
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=offgrid-radio-server
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
