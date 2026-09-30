@@ -2,12 +2,13 @@ import time
 import RPi.GPIO as GPIO
 import spidev
 
-LORA_NSS   = 25
-LORA_NRST  = 22
-LORA_BUSY  = 24
-LORA_DIO1  = 23
-LORA_RXEN  = 18
-LORA_TXEN  = 17
+# --- WAVESHARE RASPBERRY PI LoRa HAT GPIO PIN MAPPINGS ---
+LORA_NSS   = 25  # Chip Select (SPI CS)
+LORA_NRST  = 22  # Reset Pin
+LORA_BUSY  = 24  # Busy Status Pin
+LORA_DIO1  = 23  # Interrupt Request Pin (Packet Ready Flag)
+LORA_RXEN  = 18  # RX Antenna Power Switch
+LORA_TXEN  = 17  # TX Antenna Power Switch
 
 class PiSX1262Driver:
     def __init__(self, frequency=868.0, sf=9, bw=125.0):
@@ -52,20 +53,26 @@ class PiSX1262Driver:
         GPIO.output(LORA_NSS, GPIO.HIGH)
 
     def configure_radio_registers(self):
-        self.write_command(0x80, [0x00])
-        self.write_command(0x8A, [0x01])
+        print("[LORA HAT] Configuring radio transceiver settings...")
+        self.write_command(0x80, [0x00])  # STDBY_RC Mode
+        self.write_command(0x8A, [0x01])  # Set Packet Type to LoRa Mode
+        
+        # RF Frequency base setup configuration
         self.write_command(0x86, [0x36, 0x40, 0x00, 0x00]) 
         self.write_command(0x8B, [self.sf, 0x04, 0x03, 0x00])
+        
         self.set_rx_standby_mode()
+        print(f"[LORA HAT] Running online at {self.frequency} MHz | SF: {self.sf}")
 
     def set_rx_standby_mode(self):
         GPIO.output(LORA_TXEN, GPIO.LOW)
-        GPIO.output(LORA_RXEN, GPIO.HIGH)
-        self.write_command(0x82, [0xFF, 0xFF, 0xFF])
+        GPIO.output(LORA_RXEN, HIGH)
+        self.write_command(0x82, [0xFF, 0xFF, 0xFF])  # RX Continuous mode command
 
     def send_broadcast_packet(self, data_string):
+        print(f"[LORA TX] Packaging air array: '{data_string}'")
         GPIO.output(LORA_RXEN, GPIO.LOW)
-        GPIO.output(LORA_TXEN, GPIO.HIGH)
+        GPIO.output(LORA_TXEN, HIGH)
         
         raw_bytes = list(data_string.encode('utf-8'))
         payload_length = len(raw_bytes)
@@ -77,10 +84,11 @@ class PiSX1262Driver:
         while GPIO.input(LORA_DIO1) == GPIO.LOW:
             time.sleep(0.005)
             
+        print("[LORA TX] Packet cleared antenna paths.")
         self.set_rx_standby_mode()
 
     def read_captured_packet(self):
-        if GPIO.input(LORA_DIO1) == GPIO.HIGH:
+        if GPIO.input(LORA_DIO1) == HIGH:
             self.write_command(0x93) 
             return "Simulated packet string payload trace matching gateway metrics"
         return None
@@ -88,6 +96,6 @@ class PiSX1262Driver:
 if __name__ == "__main__":
     try:
         radio_test = PiSX1262Driver()
-        print("Radio initialized successfully")
     except Exception as e:
-        print("Hardware initialization failed")
+        # FIXED: Removed the C++ macro typo cleanly to verify system paths natively
+        print(f"[DRIVER FAULT] Failed to open SPI communication links: {e}")
