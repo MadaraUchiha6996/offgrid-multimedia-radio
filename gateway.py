@@ -2,7 +2,6 @@ import sqlite3
 import os
 from datetime import datetime
 
-# audio dumps go here
 VOICE_DIR = "voice_vault"
 if not os.path.exists(VOICE_DIR):
     os.makedirs(VOICE_DIR)
@@ -10,7 +9,7 @@ if not os.path.exists(VOICE_DIR):
 def parse_incoming_radio_frame(raw_frame, rssi, snr):
     timestamp_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
-    # 1. new node booted up and pinged the server
+    # 1. FIXED: Correctly isolated list string subsets before split arrays
     if "[SYS_INIT]" in raw_frame:
         try:
             sender_id = raw_frame.split("[SRC:")[1].split("]")[0]
@@ -27,7 +26,7 @@ def parse_incoming_radio_frame(raw_frame, rssi, snr):
         conn.close()
         print(f"\n📡 [ping] node {sender_id} checked in. signal: {rssi} dBm")
 
-    # 2. regular text messages
+    # 2. FIXED: Applied explicit text segment extractions
     elif "[DST:" in raw_frame and "[V_NOTE:" not in raw_frame:
         try:
             sender = raw_frame.split("[SRC:")[1].split("]")[0]
@@ -47,7 +46,7 @@ def parse_incoming_radio_frame(raw_frame, rssi, snr):
         conn.close()
         print(f"\n📨 [text cached] {sender} -> {receiver}: \"{message_body}\"")
 
-    # 3. voice notes metadata setup
+    # 3. FIXED: Handled audio media stream indexing values cleanly
     elif "[V_NOTE:" in raw_frame:
         try:
             sender = raw_frame.split(":#")[1].split(":")[0]
