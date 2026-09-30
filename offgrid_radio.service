@@ -3,16 +3,11 @@ Description=Off-Grid Portable Multimedia Radio Network Server Daemon
 After=network.target
 
 [Service]
-# Automatically runs under the default Raspberry Pi primary user profile
 User=pi
 WorkingDirectory=/home/pi/OffGridRadioServer
 ExecStart=/usr/bin/python3 /home/pi/OffGridRadioServer/main_server.py
-
-# Robust Fault Tolerance / Emergency Error Guard Rails
 Restart=always
 RestartSec=5s
-
-# Standard output telemetry logging redirection
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=offgrid-radio-server
