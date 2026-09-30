@@ -1,5 +1,7 @@
 #  Off-Grid Radio Network for emergencies 
 #  Made by meee Vaibhavv 
+yo guyss before you read this I am vaibhav and i am a 9th grader and i have tried to make a innovation and help my country who is suffring from the problems and i have tried to make it fine as possible and also to help my future welll enjoy readingg!!
+
 So basically this project is an offline communication setup meant for disasters when standard internet and cell towers go completely dark. It uses a main home base station linked to small portable handheld walkie-talkie units. They talk over raw radio waves without needing any active sim cards, wifi, or external provider networks.
 
 ### how the system layout works
