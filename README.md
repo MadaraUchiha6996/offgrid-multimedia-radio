@@ -1,5 +1,5 @@
 #  Off-Grid Radio Network for emergencies 
-#Made by meee Vaibhavv 
+#  Made by meee Vaibhavv 
 So basically this project is an offline communication setup meant for disasters when standard internet and cell towers go completely dark. It uses a main home base station linked to small portable handheld walkie-talkie units. They talk over raw radio waves without needing any active sim cards, wifi, or external provider networks.
 
 ### how the system layout works
