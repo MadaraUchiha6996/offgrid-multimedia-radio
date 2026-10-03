@@ -1,4 +1,4 @@
-![schematic](https://github.com/user-attachments/assets/d5f57a7d-0c9b-4dc0-b7d5-eb442fe7b924)
+
 #  Off-Grid Radio Network for emergencies 
 #  Made by meee Vaibhavv 
 yo guyss before you read this I am vaibhav and i am a 9th grader and i have tried to make a innovation and help my country who is suffring from the problems and i have tried to make it fine as possible and also to help my future welll enjoy readingg!!
