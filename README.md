@@ -36,7 +36,7 @@ The whole thing splits into two main sections that connect automatically:
 
 ## master bill of materials (BOM)
 
-### core computers & radios
+### computers & radios
 *   Raspberry Pi 4 Model B (4GB RAM) | Robocraze | ₹9,599 each
 *   Official Arduino Nano ESP32-S3 without Headers ABX00092|Robo|₹2069 each
 *   Lora Antenna 868MHz Wireless Module|Shokitech|60 each
@@ -44,13 +44,13 @@ The whole thing splits into two main sections that connect automatically:
 *   HDMI to Micro HDMI Cable | Robocraze | ₹165
 *   Waveshare SX1262 LoRa HAT for Raspberry Pi | Electro piiee | ₹7,076 (3 units @ ₹1,999 each including shipping)
 
-### audio peripherals & visual displays
+### audio  & visual displays
 *   INMP441 MEMS Digital Microphone Module (I2S) | Robocraze | ₹360 (2 units @ ₹180 each)
 *   SmartElex I2S Audio Breakout - MAX98357A | Techtonics | ₹480 (2 units @ ₹240 each)
 *   3W 4-Ohm 2-Inch Full Range Stereo Audio Speaker Woofer | Robu.in | ₹240 (2 units @ ₹120 each)
 *   0.96-inch SSD1306 OLED Display Module (4-Pin I2C) | Robu.in | ₹440 (2 units @ ₹220 each)
 
-### portable power banks & hardware bits
+### portable power banks & hardware 
 *   Nextech 15W / 10000mAh CASE 3 Charging Power Bank | Robocraze | ₹1,400 (2 units @ ₹700 each)
 *   400-Point Solderless Prototyping Breadboard | Robocraze | ₹150 (2 units @ ₹75 each)
 *   12mm Momentary Tactile Push Buttons (5-Pack) | Robocraze | ₹60 (2 packs @ ₹20 each)
@@ -60,7 +60,7 @@ The whole thing splits into two main sections that connect automatically:
 *   Short USB-A to USB-C Data Cable | Robocraze | ₹120 (2 units @ ₹60 each)
 *   LoRa Antenna 868MHz 3.2dBi SMA Male | Local | ₹300 (3 units @ ₹100 each)
 
-### fabrication tools & case build setup
+###  case build setup
 *   Noel 25W Soldering Iron Tool | Robocraze | ₹126
 *   High-Grade Solder Wire Spool (90g) | Robocraze | ₹269
 *   PCb|Pcbway|₹4,600|5 piece
