@@ -27,7 +27,7 @@ The whole thing splits into two main sections that connect automatically:
 ### main operational features
 
 *   **Priority message waking:** If a critical emergency broadcast comes in while the radio is quiet, the handset breaks its standby loop instantly. It turns on the hardware, plays a quick dual-tone buzzer alert tone, and flashes a small envelope graphic on the screen for 4 seconds.
-*   **6-minute power saver mode:** If you don't click any buttons for 6 minutes (360,000 milliseconds), the ESP32 automatically cuts off power to the OLED screen panel registry. This keeps it from killing your power bank battery, leaving only the LoRa chip listening quietly for incoming signals.
+*   **6-minute power saver mode:** If you don't click any buttons for 6 minutes the ESP32 automatically cuts off power to the OLED screen panel . This keeps it from killing your power bank battery, leaving only the LoRa chip listening quietly for incoming signals.so it lasts longgg
 *   **Rough range tracking without gps:** Option 3 on the menu checks raw signal quality stats (RSSI and SNR values) and calculates them through a basic logarithmic formula. This gives you a rough tracking distance radius in meters without needing a separate power-hungry GPS module.
 *   **Twisting a dial for range control:** The board code checks a real physical potentiometer dial. If your friend is nearby, you can twist it down to low power (like +2 dBm) to save battery. If they're far away, you crank it to full power (+22 dBm) to push the message through concrete walls.
 
@@ -37,6 +37,8 @@ The whole thing splits into two main sections that connect automatically:
 
 ### core computers & radios
 *   Raspberry Pi 4 Model B (4GB RAM) | Robocraze | ₹9,599 each
+*   Official Arduino Nano ESP32-S3 without Headers ABX00092|Robo|₹2069 each
+*   Lora Antenna 868MHz Wireless Module|Shokitech|60 each
 *   SanDisk 64GB Micro SD-SDHC Memory Card | Robocraze | ₹1,889
 *   HDMI to Micro HDMI Cable | Robocraze | ₹165
 *   Waveshare SX1262 LoRa HAT for Raspberry Pi | Electro piiee | ₹7,076 (3 units @ ₹1,999 each including shipping)
@@ -60,8 +62,11 @@ The whole thing splits into two main sections that connect automatically:
 ### fabrication tools & case build setup
 *   Noel 25W Soldering Iron Tool | Robocraze | ₹126
 *   High-Grade Solder Wire Spool (90g) | Robocraze | ₹269
-*   PerfBoad | Robocraz | ₹100 (Batch of 5-10 boards)
+*   PCb|Pcbway|₹4,600|5 piece
+*   RG316 SMA Male to Female Extension Cable - 20cm|₹98.00 each
 *   Sender Station Handheld Unit Case Setup (PETG frame, TPU bumpers, brass inserts, screws): ₹1,180
 *   Receiver Station Handheld Unit Case Setup : ₹1,180
 
-** total project cost:** ₹29,662 INR (about \$320.60 USD)
+** total project cost:** ₹32,186 INR(about \$334.14 USD)
+** YOoo guys remember the pricee of items are fluctuation so check twicee!!!
+
