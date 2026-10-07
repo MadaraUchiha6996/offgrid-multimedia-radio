@@ -8,7 +8,7 @@ So basically this project is an offline communication setup meant for disasters 
 ### how the system layout works
 
 The whole thing splits into two main sections that connect automatically:
-1. **The Handheld Walkie-Talkie (ESP32-S3):** This takes your voice notes through an I2S mic, shows details on a small OLED display screen, and lets you type out messages using a simple button menu. 
+1. **The Handheld Walkie-Talkie (ESP32-S3):** This takes your voice notes through an I mic, shows details on a small OLED display screen, and lets you type out messages using a simple button menu. 
 2. **The Central Home Server Hub (Raspberry Pi 4):** This stays running at home 24/7 to sort out incoming radio signals, handle emergency message priorities, and save everything into a local SQLite database storage vault.
 
 ---
