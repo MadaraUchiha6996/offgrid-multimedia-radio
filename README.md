@@ -28,46 +28,33 @@ The whole thing splits into two main sections that connect automatically:
 ### main operational features
 
 *   **Priority message waking:** If a critical emergency broadcast comes in while the radio is quiet, the handset breaks its standby loop instantly. It turns on the hardware, plays a quick dual-tone buzzer alert tone, and flashes a small envelope graphic on the screen for 4 seconds.
-*   **6-minute power saver mode:** If you don't click any buttons for 6 minutes the ESP32 automatically cuts off power to the OLED screen panel . This keeps it from killing your power bank battery, leaving only the LoRa chip listening quietly for incoming signals.so it lasts longgg
-*   **Rough range tracking without gps:** Option 3 on the menu checks raw signal quality stats (RSSI and SNR values) and calculates them through a basic logarithmic formula. This gives you a rough tracking distance radius in meters without needing a separate power-hungry GPS module.
-*   **Twisting a dial for range control:** The board code checks a real physical potentiometer dial. If your friend is nearby, you can twist it down to low power (like +2 dBm) to save battery. If they're far away, you crank it to full power (+22 dBm) to push the message through concrete walls.
+*   **6-minute power saver mode:** If you don't click any buttons for 6 minutes the ESP32 automatically cuts off power to the OLED screen panel . This keeps it from killing your battery, leaving only the LoRa chip listening quietly for incoming signals.so it lasts longgg
+**   **Twisting a dial for range control:** The board code checks a real physical potentiometer dial. If your friend is nearby, you can twist it down to low power (like +2 dBm) to save battery. If they're far away, you crank it to full power  to push the message through concrete walls.
 
 ---
 
 ## master bill of materials (BOM)
 
-### computers & radios
-*   Raspberry Pi 4 Model B (4GB RAM) | Robocraze | ₹9,599 each
-*   Official Arduino Nano ESP32-S3 without Headers ABX00092|Robo|₹2069 each
-*   Lora Antenna 868MHz Wireless Module|Shokitech|60 each
-*   SanDisk 64GB Micro SD-SDHC Memory Card | Robocraze | ₹1,889
-*   HDMI to Micro HDMI Cable | Robocraze | ₹165
-*   Waveshare SX1262 LoRa HAT for Raspberry Pi | Electro piiee | ₹7,076 (3 units @ ₹1,999 each including shipping)
-
-### audio  & visual displays
-*   INMP441 MEMS Digital Microphone Module (I2S) | Robocraze | ₹360 (2 units @ ₹180 each)
-*   SmartElex I2S Audio Breakout - MAX98357A | Techtonics | ₹480 (2 units @ ₹240 each)
-*   3W 4-Ohm 2-Inch Full Range Stereo Audio Speaker Woofer | Robu.in | ₹240 (2 units @ ₹120 each)
-*   0.96-inch SSD1306 OLED Display Module (4-Pin I2C) | Robu.in | ₹440 (2 units @ ₹220 each)
-
-### portable power banks & hardware 
-*   Nextech 15W / 10000mAh CASE 3 Charging Power Bank | Robocraze | ₹1,400 (2 units @ ₹700 each)
-*   400-Point Solderless Prototyping Breadboard | Robocraze | ₹150 (2 units @ ₹75 each)
-*   12mm Momentary Tactile Push Buttons (5-Pack) | Robocraze | ₹60 (2 packs @ ₹20 each)
-*   Male-to-Male (M-M) Jumper Wires Bundle | Robocraze | ₹150 (2 packs @ ₹70 each)
-*   Female-to-Male (F-M) Jumper Wires Bundle | Robocraze | ₹150 (2 packs @ ₹70 each)
-*   10k Ohm Metal Film Resistors (Pack of 10) | Robocraze | ₹25
-*   Short USB-A to USB-C Data Cable | Robocraze | ₹120 (2 units @ ₹60 each)
-*   LoRa Antenna 868MHz 3.2dBi SMA Male | Local | ₹300 (3 units @ ₹100 each)
-
-###  case build setup
-*   Noel 25W Soldering Iron Tool | Robocraze | ₹126
-*   High-Grade Solder Wire Spool (90g) | Robocraze | ₹269
-*   PCb|Pcbway|₹4,600|5 piece
-*   RG316 SMA Male to Female Extension Cable - 20cm|₹98.00 each
-*   Sender Station Handheld Unit Case Setup (PETG frame, TPU bumpers, brass inserts, screws): ₹1,180
-*   Receiver Station Handheld Unit Case Setup : ₹1,180
-
-** total project cost:** ₹32,186 INR(about \$334.14 USD)
+* raspberry pi 3b	robocraze	₹4,790 / $57.02	1	₹4,790 / $57.02
+* sandisk 32gb high-endurance micro sd	amazon	₹550 / $6.54	1	₹550 / $6.54
+* waveshare sx1262 lora hat	robu.in	₹2,450 / $29.16	1	₹2,450 / $29.16
+* lora antenna 868MHz 3.2dBi sma male	shokitech	₹280 / $3.33	3	₹840 / $10.00
+* 5v 3a micro-usb power supply	robocraze	₹480 / $5.71	1	₹480 / $5.7
+* custom 4-layer bare pcbs	pcbway	₹560 / $6.66	5	₹2,800 / $33.33
+* esp32-s3fh4r2 microcontroller	lcsc	₹250 / $2.98	5	₹1,250 / $14.88
+* ht-ct62 lora ic	lcsc	₹500 / $5.95	5	₹2,500 / $29.76
+* icm-20948 9-axis imu	mouser	₹640 / $7.61	5	₹3,200 / $38.09power and audio ics + passives kit	lcsc	₹420 / $5.00	5	₹2,100 / $25.00
+* dedicated ic for gps tracking	robu.in	₹620 / $7.38	2	₹1,240 / $14.76
+* 3.7v 2000mAh lipo battery	robu.in	₹475 / $5.65	2	₹950 / $11.30
+* 3w 4-ohm 2-inch speaker	robu.in	₹190 / $2.26	2	₹380 / $4.52
+* 0.96-inch oled display (i2c)	robocraze	₹325 / $3.86	2	₹650 / $7.73
+* u.fl to sma pigtail cable	robocraze	₹150 / $1.78	2	₹300 / $3.57
+* 6x6x5mm push buttons (10-pack)	robocraze	₹50 / $0.59	1	₹50 / $0.59
+* 3d printed cases (server + 2 handhelds)	pcbway 3d	₹1,200 / $14.28	3	₹3,600 / $42.85
+* short usb-a to usb-c cable	robocraze	₹150 / $1.78	2	₹300 / $3.57
+* pin headers and jumper wires	robocraze	₹200 / $2.38	1	₹200 / $2.38
+* usb microsd reader	amazon	₹150 / $1.78	1	₹150 / $1.78
+* 25w soldering iron and flux wire	robocraze	₹550 / $6.54	1	₹550 / $6.54
+## Total cost of all off the componnets areee around ₹29,330 / $349.16
 ** YOoo guys remember the pricee of items are fluctuation so check twicee!!!
 
