@@ -39,6 +39,8 @@
 <img width="930" height="533" alt="Screenshot 2026-10-09 205020" src="https://github.com/user-attachments/assets/9053b4b9-517e-492f-ab13-986049e69855" />
 <img width="959" height="539" alt="Screenshot 2026-10-09 204957" src="https://github.com/user-attachments/assets/fc37440a-b479-4a3c-a4c6-9c686facc070" />
 <img width="959" height="539" alt="Screenshot 2026-10-09 204859" src="https://github.com/user-attachments/assets/d2f010a0-4316-4233-b4e9-ff8e2e3491bb" />
+
 * I have also wrote the code for it for the gps (using no module but an ic) and the full UI and and the esp as well ill be uploading it with in 1 or 2 days
+* The BOM has been updated as well
   
 
