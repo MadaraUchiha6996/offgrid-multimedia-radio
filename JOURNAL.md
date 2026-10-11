@@ -42,5 +42,9 @@
 
 * I have also wrote the code for it for the gps (using no module but an ic) and the full UI and and the esp as well ill be uploading it with in 1 or 2 days
 * The BOM has been updated as well
+## 11 October 2026 
+* The code has been fully tested and ready to deploy 
+* I have check for any error in the code and complied the code and tested on a virtual machine it works great
+* the project is ready to go and the pcb is ready to be manufactured
   
 
