@@ -47,4 +47,5 @@
 * I have check for any error in the code and complied the code and tested on a virtual machine it works great
 * the project is ready to go and the pcb is ready to be manufactured
   
+<img width="917" height="526" alt="image" src="https://github.com/user-attachments/assets/dbfb6d98-d00a-49ea-81a5-76fd151ecd7c" />
 
