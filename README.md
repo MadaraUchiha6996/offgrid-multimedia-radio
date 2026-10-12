@@ -1,4 +1,5 @@
 
+
 #  Off-Grid Radio Network for emergencies 
 #  Made by meee Vaibhavv 
 yo guyss before you read this I am vaibhav and i am a 9th grader and i have tried to make a innovation and help my country who is suffring from the problems and i have tried to make it fine as possible and also to help my future welll enjoy readingg!!
@@ -57,4 +58,6 @@ The whole thing splits into two main sections that connect automatically:
 * 25w soldering iron and flux wire	robocraze	₹550 / $6.54	1	₹550 / $6.54
 ## Total cost of all off the componnets areee around ₹29,330 / $349.16
 ** YOoo guys remember the pricee of items are fluctuation so check twicee!!!
+<img width="959" height="539" alt="Screenshot 2026-10-09 204957" src="https://github.com/user-attachments/assets/6d1dc55e-cd33-4997-95b9-58a5277498d7" />
+<img width="959" height="539" alt="Screenshot 2026-10-09 204859" src="https://github.com/user-attachments/assets/ded880c8-33e6-452a-83f4-dbd4cb3ccda0" />
 
