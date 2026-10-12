@@ -55,4 +55,5 @@
 <img width="917" height="526" alt="image" src="https://github.com/user-attachments/assets/dbfb6d98-d00a-49ea-81a5-76fd151ecd7c" />
 
 ## All of the time takes was estimate and the time mentioned is a rough time that was taken to make a rough structure of it and the finshed thing was made when the next journal uploaded so like i did my last one on 1 oct so the final thing was made till 5 oct and so on.!!!!!!!
+<img width="959" height="539" alt="Screenshot 2026-10-09 204957" src="https://github.com/user-attachments/assets/6d1dc55e-cd33-4997-95b9-58a5277498d7" />
 
