@@ -60,4 +60,26 @@ The whole thing splits into two main sections that connect automatically:
 ** YOoo guys remember the pricee of items are fluctuation so check twicee!!!
 <img width="959" height="539" alt="Screenshot 2026-10-09 204957" src="https://github.com/user-attachments/assets/6d1dc55e-cd33-4997-95b9-58a5277498d7" />
 <img width="959" height="539" alt="Screenshot 2026-10-09 204859" src="https://github.com/user-attachments/assets/ded880c8-33e6-452a-83f4-dbd4cb3ccda0" />
+## List of features for people wondering
+* Gps
+* Display
+* in bulilt mic and speaker
+* range upto 25 and 10km
+* internet gate way
+* uses no pre built
+* Completely off grid
+* uses mesh protocol
+* power to send voice notes upto 10sec
+* encryption
+* can send text msg
+* range control
+* uses battery which can be rechargebale
+* portable
+* cost effective and cheap
+* made total by a 9thgrader
+* uses radio waves
+* server backups
+* total control over your device
+* and many more
+* 
 
